@@ -31,6 +31,9 @@ void Inpar::NlnSol::set_valid_parameters(Teuchos::ParameterList& list)
 
     Core::Utils::string_parameter("Nonlinear Solver", "Line Search Based",
         "Choose a nonlinear solver method.", &snox, nonlinear_solver_valid_input);
+
+    Core::Utils::string_parameter("NONLINEAR_SOLVER_XML_FILE", "none",
+        "xml file defining any MueLu preconditioner", &snox);
   }
 
   // sub-list direction

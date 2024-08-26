@@ -74,6 +74,8 @@ TOL_VEL_RES_L2                  1e-08
 LINEAR_SOLVER                   1
 ALE_TYPE                        springs_material
 UPDATEMATRIX                    yes
+------------------------------------------------------------------STRUCT NOX
+NONLINEAR_SOLVER_XML_FILE       /home_student/escher/baci/tests/input_files/xml/nonlinear_solver/fluid_solid_ale.xml
 --------------------------------------------------------------------SOLVER 1
 SOLVER                          UMFPACK
 --------------------------------------------------------------------SOLVER 2

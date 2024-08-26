@@ -14,6 +14,7 @@
 #include "4C_adapter_str_fsiwrapper.hpp"
 #include "4C_constraint_manager.hpp"
 #include "4C_coupling_adapter.hpp"
+#include "4C_comm_utils.hpp"
 #include "4C_fem_discretization.hpp"
 #include "4C_fluid_utils_mapextractor.hpp"
 #include "4C_fsi_debugwriter.hpp"
@@ -36,6 +37,9 @@
 #include <Teuchos_StandardParameterEntryValidators.hpp>
 #include <Teuchos_Time.hpp>
 #include <Teuchos_TimeMonitor.hpp>
+#include <Teuchos_ParameterList.hpp>
+#include <Teuchos_XMLParameterListHelpers.hpp>
+#include <Teuchos_XMLParameterListReader.hpp>
 
 #include <memory>
 
@@ -467,20 +471,17 @@ void FSI::Monolithic::prepare_timeloop()
   // make sure we didn't destroy the maps before we entered the timeloop
   extractor().check_for_valid_map_extractor();
 
-  // Get the top level parameter list
+    // Get the top level parameter list
   Teuchos::ParameterList& nlParams = nox_parameter_list();
+
+  Teuchos::ParameterList nonlinear_input_params = Global::Problem::instance()->structural_nox_params();
+  const std::string nox_xml_file = nonlinear_input_params.get<std::string>("NONLINEAR_SOLVER_XML_FILE");
+
+  std::shared_ptr<const Teuchos::Comm<int>> teuchos_comm = Core::Communication::to_teuchos_comm<int>(get_comm());
+  Teuchos::updateParametersFromXmlFileAndBroadcast(nox_xml_file, Teuchos::rcpFromRef(nlParams).ptr(), *teuchos_comm);
 
   Teuchos::ParameterList& printParams = nlParams.sublist("Printing");
   printParams.set("MyPID", Core::Communication::my_mpi_rank(get_comm()));
-
-  printParams.set(
-      "Output Information", ::NOX::Utils::Error | ::NOX::Utils::Warning |
-                                ::NOX::Utils::OuterIteration | ::NOX::Utils::InnerIteration |
-                                // ::NOX::Utils::Parameters |
-                                ::NOX::Utils::Details | ::NOX::Utils::OuterIterationStatusTest |
-                                ::NOX::Utils::LinearSolverDetails | ::NOX::Utils::TestDetails |
-                                ::NOX::Utils::StepperIteration | ::NOX::Utils::StepperDetails |
-                                ::NOX::Utils::StepperParameters | ::NOX::Utils::Debug | 0);
 
   // Create printing utilities
   utils_ = std::make_shared<::NOX::Utils>(printParams);
@@ -515,7 +516,6 @@ void FSI::Monolithic::prepare_timeloop()
     (*logenergy_) << "#\n\n";
   }
 
-
   // check for prestressing,
   // do not allow monolithic in the pre-phase
   // allow monolithic in the post-phase
@@ -539,68 +539,10 @@ void FSI::Monolithic::time_step(
   // Get the top level parameter list
   Teuchos::ParameterList& nlParams = nox_parameter_list();
 
-  // sublists
-
   Teuchos::ParameterList& dirParams = nlParams.sublist("Direction");
   Teuchos::ParameterList& newtonParams = dirParams.sublist("Newton");
   Teuchos::ParameterList& lsParams = newtonParams.sublist("Linear Solver");
   Teuchos::ParameterList& printParams = nlParams.sublist("Printing");
-  printParams.set("MyPID", Core::Communication::my_mpi_rank(get_comm()));
-
-  switch (verbosity_)
-  {
-    case Inpar::FSI::verbosity_full:
-    {
-      printParams.set(
-          "Output Information", ::NOX::Utils::Error | ::NOX::Utils::Warning |
-                                    ::NOX::Utils::OuterIteration | ::NOX::Utils::InnerIteration |
-                                    // ::NOX::Utils::Parameters |
-                                    ::NOX::Utils::Details |  // weg damit!
-                                    ::NOX::Utils::OuterIterationStatusTest |
-                                    ::NOX::Utils::LinearSolverDetails |  // weg damit!
-                                    ::NOX::Utils::TestDetails | ::NOX::Utils::StepperIteration |
-                                    ::NOX::Utils::StepperDetails | ::NOX::Utils::StepperParameters |
-                                    ::NOX::Utils::Debug | 0);
-      break;
-    }
-    case Inpar::FSI::verbosity_medium:
-    {
-      printParams.set(
-          "Output Information", ::NOX::Utils::Error | ::NOX::Utils::Warning |
-                                    ::NOX::Utils::OuterIteration | ::NOX::Utils::InnerIteration |
-                                    // ::NOX::Utils::Parameters |
-                                    // ::NOX::Utils::Details | //weg damit!
-                                    ::NOX::Utils::OuterIterationStatusTest |
-                                    ::NOX::Utils::LinearSolverDetails |  // weg damit!
-                                    ::NOX::Utils::TestDetails | ::NOX::Utils::StepperIteration |
-                                    ::NOX::Utils::StepperDetails | ::NOX::Utils::StepperParameters |
-                                    ::NOX::Utils::Debug | 0);
-      break;
-    }
-    case Inpar::FSI::verbosity_low:
-    case Inpar::FSI::verbosity_subproblem:
-    {
-      printParams.set(
-          "Output Information", ::NOX::Utils::Error | ::NOX::Utils::Warning |
-                                    //                    ::NOX::Utils::OuterIteration |
-                                    //                    ::NOX::Utils::InnerIteration |
-                                    //                    //::NOX::Utils::Parameters |
-                                    //  //                  ::NOX::Utils::Details |
-                                    ::NOX::Utils::OuterIterationStatusTest |
-                                    //  //                  ::NOX::Utils::LinearSolverDetails |
-                                    //                    ::NOX::Utils::TestDetails |
-                                    //                    ::NOX::Utils::StepperIteration |
-                                    //                    ::NOX::Utils::StepperDetails |
-                                    //                    ::NOX::Utils::StepperParameters |
-                                    ::NOX::Utils::Debug | 0);
-      break;
-    }
-    default:
-    {
-      FOUR_C_THROW("Verbosity level not supported!");
-      break;
-    }
-  }
 
   Teuchos::Time timer("time step timer");
 
@@ -944,7 +886,7 @@ void FSI::Monolithic::set_default_parameters(
 
   // status tests are expensive, but instructive
   // solverOptions.set<std::string>("Status Test Check Type","Minimal");
-  solverOptions.set<std::string>("Status Test Check Type", "Complete");
+  //solverOptions.set<std::string>("Status Test Check Type", "Complete");
 
   // be explicit about linear solver parameters
   lsParams.set<std::string>("Aztec Solver", "GMRES");
