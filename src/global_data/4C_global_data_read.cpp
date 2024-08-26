@@ -1928,7 +1928,7 @@ void Global::read_parameter(Global::Problem& problem, Core::IO::InputFile& input
     // adapt path of XML file if necessary
     Teuchos::ParameterList& sublist = list->sublist(ss.str());
     std::vector<std::string> listOfFileNameParameters = {
-        "AMGNXN_XML_FILE", "MUELU_XML_FILE", "TEKO_XML_FILE", "SOLVER_XML_FILE", "NONLINEAR_SOLVER_XML_FILE"};
+        "AMGNXN_XML_FILE", "MUELU_XML_FILE", "TEKO_XML_FILE", "SOLVER_XML_FILE"};
 
     for (auto& filenameParameter : listOfFileNameParameters)
     {
@@ -1959,7 +1959,20 @@ void Global::read_parameter(Global::Problem& problem, Core::IO::InputFile& input
       *statustest_xmlfile = input_filename.parent_path() / *statustest_xmlfile;
       std::cout << "XML file for NOX status test: " << *statustest_xmlfile << std::endl;
     }
-  }  // STRUCT NOX/Status Test
+  }
+  else if (list->sublist("STRUCT NOX").isParameter("NONLINEAR_SOLVER_XML_FILE"))
+  {
+    // adapt path of XML file if necessary
+    Teuchos::ParameterList& sublist = list->sublist("STRUCT NOX");
+    auto* statustest_xmlfile = sublist.getPtr<std::string>("NONLINEAR_SOLVER_XML_FILE");
+    // make path relative to input file path if it is not an absolute path
+    if (((*statustest_xmlfile)[0] != '/') and ((*statustest_xmlfile) != "none"))
+    {
+      auto input_filename = input.file_for_section("STRUCT NOX");
+      *statustest_xmlfile = input_filename.parent_path() / *statustest_xmlfile;
+      std::cout << "XML file for NOX status test: " << *statustest_xmlfile << std::endl;
+    }
+  }
 
   // check for invalid parameters
   problem.set_parameter_list(list);

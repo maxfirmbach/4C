@@ -1,29 +1,36 @@
 <ParameterList name="NOX">
-    <Parameter name="Nonlinear Solver" type="string" value="Line Search Based"/>
-    <ParameterList name="Direction">
-        <Parameter name="Method" type="string" value="Newton"/>
+  <Parameter name="Nonlinear Solver" type="string" value="Line Search Based"/>
+  <ParameterList name="Direction">
+    <Parameter name="Method" type="string" value="Newton"/>
+    <ParameterList name="Newton">
+      <Parameter name="Forcing Term Method" type="string" value="Type 1"/>
+      <Parameter name="Forcing Term Initial Tolerance" type="double" value="0.1"/>
+      <Parameter name="Forcing Term Minimum Tolerance" type="double" value="1e-06"/>
+      <Parameter name="Forcing Term Maximum Tolerance" type="double" value="0.01"/>
+      <Parameter name="Rescue Bad Newton Solve" type="bool" value="true"/>
     </ParameterList>
-    <ParameterList name="Line Search">
-        <Parameter name="Method" type="string" value="Full Step"/>
+  </ParameterList>
+  <ParameterList name="Line Search">
+    <Parameter name="Method" type="string" value="Full Step"/>
+  </ParameterList>
+  <ParameterList name="Solver Options">
+    <Parameter name="Status Test Check Type" type="string" value="Minimal"/>
+  </ParameterList>
+  <ParameterList name="Printing">
+    <Parameter name="Output Precision" type="int" value="3"/>
+    <Parameter name="Output Processor" type="int" value="0"/>
+    <ParameterList name="Output Information">
+      <Parameter name="Error" type="bool" value="true"/>
+      <Parameter name="Warning" type="bool" value="true"/>
+      <Parameter name="Inner Iteration" type="bool" value="true"/>
+      <Parameter name="Outer Iteration" type="bool" value="true"/>
+      <Parameter name="Outer Iteration StatusTest" type="bool" value="true"/>
+      <Parameter name="Parameters" type="bool" value="false"/>
+      <Parameter name="Details" type="bool" value="true"/>
+      <Parameter name="Linear Solver Details" type="bool" value="true"/>
+      <Parameter name="Stepper Iteration" type="bool" value="true"/>
+      <Parameter name="Stepper Details" type="bool" value="true"/>
+      <Parameter name="Stepper Parameters" type="bool" value="true"/>
     </ParameterList>
-    <ParameterList name="Solver Options">
-      <Parameter name="Status Test Check Type" type="string" value="Minimal"/>
-    </ParameterList>
-    <ParameterList name="Printing">
-      <Parameter name="Output Precision" type="int" value="3"/>
-      <Parameter name="Output Processor" type="int" value="0"/>
-      <ParameterList name="Output Information">
-        <Parameter name="Error" type="bool" value="true"/>
-        <Parameter name="Warning" type="bool" value="true"/>
-        <Parameter name="Inner Iteration" type="bool" value="true"/>
-        <Parameter name="Outer Iteration" type="bool" value="true"/>
-        <Parameter name="Outer Iteration StatusTest" type="bool" value="true"/>
-        <Parameter name="Parameters" type="bool" value="false"/>
-        <Parameter name="Details" type="bool" value="true"/>
-        <Parameter name="Linear Solver Details" type="bool" value="true"/>
-        <Parameter name="Stepper Iteration" type="bool" value="true"/>
-        <Parameter name="Stepper Details" type="bool" value="true"/>
-        <Parameter name="Stepper Parameters" type="bool" value="true"/>
-      </ParameterList>
-    </ParameterList>
+  </ParameterList>
 </ParameterList>

@@ -12,9 +12,10 @@
 #include "4C_adapter_fld_fluid_fsi.hpp"
 #include "4C_adapter_str_fsi_timint_adaptive.hpp"
 #include "4C_adapter_str_fsiwrapper.hpp"
+#include "4C_ale_utils_mapextractor.hpp"
+#include "4C_comm_utils.hpp"
 #include "4C_constraint_manager.hpp"
 #include "4C_coupling_adapter.hpp"
-#include "4C_comm_utils.hpp"
 #include "4C_fem_discretization.hpp"
 #include "4C_fluid_utils_mapextractor.hpp"
 #include "4C_fsi_debugwriter.hpp"
@@ -34,10 +35,12 @@
 #include "4C_structure_aux.hpp"
 
 #include <NOX_Direction_UserDefinedFactory.H>
+#include <NOX_Epetra_Interface_Preconditioner.H>
 #include <Teuchos_StandardParameterEntryValidators.hpp>
+#include <Teuchos_ParameterList.hpp>
+#include <Teuchos_RCP.hpp>
 #include <Teuchos_Time.hpp>
 #include <Teuchos_TimeMonitor.hpp>
-#include <Teuchos_ParameterList.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
 #include <Teuchos_XMLParameterListReader.hpp>
 
@@ -471,14 +474,22 @@ void FSI::Monolithic::prepare_timeloop()
   // make sure we didn't destroy the maps before we entered the timeloop
   extractor().check_for_valid_map_extractor();
 
-    // Get the top level parameter list
+  // Get the top level parameter list
   Teuchos::ParameterList& nlParams = nox_parameter_list();
 
-  Teuchos::ParameterList nonlinear_input_params = Global::Problem::instance()->structural_nox_params();
-  const std::string nox_xml_file = nonlinear_input_params.get<std::string>("NONLINEAR_SOLVER_XML_FILE");
+  Teuchos::ParameterList nonlinear_input_params =
+      Global::Problem::instance()->structural_nox_params();
+  const std::string nox_xml_file =
+      nonlinear_input_params.get<std::string>("NONLINEAR_SOLVER_XML_FILE");
 
-  std::shared_ptr<const Teuchos::Comm<int>> teuchos_comm = Core::Communication::to_teuchos_comm<int>(get_comm());
-  Teuchos::updateParametersFromXmlFileAndBroadcast(nox_xml_file, Teuchos::rcpFromRef(nlParams).ptr(), *teuchos_comm);
+  Teuchos::updateParametersFromXmlFileAndBroadcast(
+      nox_xml_file, Teuchos::rcpFromRef(nlParams).ptr(), Teuchos::MpiComm<int>(get_comm()));
+
+  // TODO: this is the old code!
+  // Teuchos::ParameterList& dirParams = nlParams.sublist("Direction");
+  // dirParams.set<std::string>("Method", "User Defined");
+  // Teuchos::RCP<::NOX::Direction::UserDefinedFactory> newtonfactory = Teuchos::rcp(this, false);
+  // dirParams.set("User Defined Direction Factory", newtonfactory);
 
   Teuchos::ParameterList& printParams = nlParams.sublist("Printing");
   printParams.set("MyPID", Core::Communication::my_mpi_rank(get_comm()));
@@ -884,6 +895,7 @@ void FSI::Monolithic::set_default_parameters(
   Teuchos::RCP<::NOX::Direction::UserDefinedFactory> newtonfactory = Teuchos::rcpFromRef(*this);
   dirParams.set("User Defined Direction Factory", newtonfactory);
 
+  // TODO: This is also old code!?
   // status tests are expensive, but instructive
   // solverOptions.set<std::string>("Status Test Check Type","Minimal");
   //solverOptions.set<std::string>("Status Test Check Type", "Complete");
@@ -1125,13 +1137,15 @@ std::shared_ptr<::NOX::Epetra::LinearSystem> FSI::BlockMonolithic::create_linear
   const Teuchos::ParameterList& fsisolverparams =
       Global::Problem::instance()->solver_params(linsolvernumber);
 
+
   auto solver = std::make_shared<Core::LinAlg::Solver>(fsisolverparams, get_comm(),
       Global::Problem::instance()->solver_params_callback(),
       Teuchos::getIntegralValue<Core::IO::Verbositylevel>(
           Global::Problem::instance()->io_params(), "VERBOSITY"));
 
-  const auto azprectype =
-      Teuchos::getIntegralValue<Core::LinearSolver::PreconditionerType>(fsisolverparams, "AZPREC");
+  lsParams.set("Tolerance", fsisolverparams.get<double>("AZTOL"));
+
+  const auto azprectype = Teuchos::getIntegralValue<Core::LinearSolver::PreconditionerType>(fsisolverparams, "AZPREC");
 
   switch (azprectype)
   {
