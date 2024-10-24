@@ -947,6 +947,8 @@ void Solid::ModelEvaluator::BeamInteraction::read_restart(Core::IO::Discretizati
         std::make_shared<Core::LinAlg::Vector<double>>(*ia_state_ptr_->get_dis_np());
     ia_state_ptr_->get_dis_restart_col() =
         std::make_shared<Core::LinAlg::Vector<double>>(*ia_state_ptr_->get_dis_np());
+
+    // TODO: we need to make sure to search this state when we have a "restart coupling"
   }
 }
 
