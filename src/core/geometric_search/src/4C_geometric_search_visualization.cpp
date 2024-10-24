@@ -48,9 +48,55 @@ namespace Core::GeometricSearch
     {
       for (const auto& bounding_volume : bounding_volumes)
       {
-        const auto& [points, polygons] =
-            get_k_dop_polyhedron_representation(bounding_volume.second);
-        IO::append_polyhedron_to_visualization_data(visualization_data, points, polygons);
+        // const auto& [points, polygons] =
+        //     get_k_dop_polyhedron_representation(bounding_volume.second);
+        // IO::append_polyhedron_to_visualization_data(visualization_data, points, polygons);
+
+        const auto box = ArborX::Box<3>(bounding_volume.second.bounding_volume_);
+        const auto min_corner = box.minCorner();
+        const auto max_corner = box.maxCorner();
+
+        for (int i_dim = 0; i_dim < 3; i_dim++)
+        {
+          visualization_data.get_point_coordinates().push_back(min_corner[i_dim]);
+        }
+
+        visualization_data.get_point_coordinates().push_back(max_corner[0]);
+        visualization_data.get_point_coordinates().push_back(min_corner[1]);
+        visualization_data.get_point_coordinates().push_back(min_corner[2]);
+
+        visualization_data.get_point_coordinates().push_back(max_corner[0]);
+        visualization_data.get_point_coordinates().push_back(max_corner[1]);
+        visualization_data.get_point_coordinates().push_back(min_corner[2]);
+
+        visualization_data.get_point_coordinates().push_back(min_corner[0]);
+        visualization_data.get_point_coordinates().push_back(max_corner[1]);
+        visualization_data.get_point_coordinates().push_back(min_corner[2]);
+
+
+        visualization_data.get_point_coordinates().push_back(min_corner[0]);
+        visualization_data.get_point_coordinates().push_back(min_corner[1]);
+        visualization_data.get_point_coordinates().push_back(max_corner[2]);
+
+        visualization_data.get_point_coordinates().push_back(max_corner[0]);
+        visualization_data.get_point_coordinates().push_back(min_corner[1]);
+        visualization_data.get_point_coordinates().push_back(max_corner[2]);
+
+        for (int i_dim = 0; i_dim < 3; i_dim++)
+        {
+          visualization_data.get_point_coordinates().push_back(max_corner[i_dim]);
+        }
+
+        visualization_data.get_point_coordinates().push_back(min_corner[0]);
+        visualization_data.get_point_coordinates().push_back(max_corner[1]);
+        visualization_data.get_point_coordinates().push_back(max_corner[2]);
+
+
+
+        visualization_data.get_cell_types().push_back(12);
+        auto& cell_offsets = visualization_data.get_cell_offsets();
+        cell_offsets.push_back(visualization_data.get_point_coordinates_number_of_points());
+
         visualization_data.get_cell_data<int>("element_id").push_back(bounding_volume.first);
         visualization_data.get_cell_data<int>("element_created_on_rank").push_back(my_rank_);
         visualization_data.get_cell_data<int>("primitive_predicate_flag")

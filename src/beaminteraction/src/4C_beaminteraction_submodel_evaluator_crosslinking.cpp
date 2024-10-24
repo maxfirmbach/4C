@@ -1340,10 +1340,10 @@ void BeamInteraction::SubmodelEvaluator::Crosslinking::reset_step_state() { chec
 /*----------------------------------------------------------------------------*
  *----------------------------------------------------------------------------*/
 void BeamInteraction::SubmodelEvaluator::Crosslinking::write_restart(
-    Core::IO::DiscretizationWriter& ia_writer, Core::IO::DiscretizationWriter& bin_writer) const
+    Core::IO::DiscretizationWriter& ia_writer) const
 {
   check_init_setup();
-
+#if 0
   // -------------------------------------------------------------------------
   // 1) write list of double bonded crosslinker on each proc
   // -------------------------------------------------------------------------
@@ -1402,6 +1402,7 @@ void BeamInteraction::SubmodelEvaluator::Crosslinking::write_restart(
   bin_writer.write_char_data("Linker", *db_linker);
   bin_writer.write_char_data("ClData", *cldata);
   bin_writer.write_char_data("BeamData", *beamdata);
+#endif
 }
 
 /*----------------------------------------------------------------------------*

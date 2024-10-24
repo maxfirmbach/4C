@@ -669,7 +669,7 @@ void BeamInteraction::SubmodelEvaluator::BeamContact::reset_step_state() { check
 /*----------------------------------------------------------------------------*
  *----------------------------------------------------------------------------*/
 void BeamInteraction::SubmodelEvaluator::BeamContact::write_restart(
-    Core::IO::DiscretizationWriter& ia_writer, Core::IO::DiscretizationWriter& bin_writer) const
+    Core::IO::DiscretizationWriter& ia_writer) const
 {
   // empty
 }

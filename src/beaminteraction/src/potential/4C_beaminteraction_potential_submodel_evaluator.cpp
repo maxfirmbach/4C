@@ -574,7 +574,7 @@ void BeamInteraction::SubmodelEvaluator::BeamPotential::reset_step_state() { che
 /*----------------------------------------------------------------------------*
  *----------------------------------------------------------------------------*/
 void BeamInteraction::SubmodelEvaluator::BeamPotential::write_restart(
-    Core::IO::DiscretizationWriter& ia_writer, Core::IO::DiscretizationWriter& bin_writer) const
+    Core::IO::DiscretizationWriter& ia_writer) const
 {
   // empty
 }
@@ -588,7 +588,8 @@ void BeamInteraction::SubmodelEvaluator::BeamPotential::pre_read_restart()
 
 /*----------------------------------------------------------------------------*
  *----------------------------------------------------------------------------*/
-void BeamInteraction::SubmodelEvaluator::BeamPotential::read_restart(Core::IO::DiscretizationReader& ia_reader)
+void BeamInteraction::SubmodelEvaluator::BeamPotential::read_restart(
+    Core::IO::DiscretizationReader& ia_reader)
 {
   // empty
 }
@@ -684,7 +685,8 @@ void BeamInteraction::SubmodelEvaluator::BeamPotential::find_and_store_neighbori
     int const elegid = ele_type_map_extractor_ptr()->beam_map()->gid(rowele_i);
     Core::Elements::Element* currele = discret().g_element(elegid);
 
-    beam_bounding_boxes.emplace_back(std::make_pair(elegid, currele->get_bounding_volume(discret(),
+    beam_bounding_boxes.emplace_back(std::make_pair(elegid,
+        currele->get_bounding_volume(discret(),
             *beam_interaction_data_state_ptr()->get_dis_col_np(), geometric_search_params_ptr_)));
   }
 
@@ -696,8 +698,8 @@ void BeamInteraction::SubmodelEvaluator::BeamPotential::find_and_store_neighbori
   {
     // Check if the current element is relevant for beam-to-xxx contact.
     Core::Elements::Element* currele = discret().l_col_element(colele_i);
-    const Core::Binstrategy::Utils::BinContentType contact_type =
-        BeamInteraction::Utils::convert_element_to_bin_content_type(currele);
+    // const Core::Binstrategy::Utils::BinContentType contact_type =
+    //     BeamInteraction::Utils::convert_element_to_bin_content_type(currele);
 
     {
       other_bounding_boxes.emplace_back(std::make_pair(currele->id(),
@@ -707,8 +709,8 @@ void BeamInteraction::SubmodelEvaluator::BeamPotential::find_and_store_neighbori
   }
 
   // Get colliding pairs.
-  const auto& collision_pairs = Core::GeometricSearch::collision_search(other_bounding_boxes, beam_bounding_boxes,
-      discret().get_comm(), geometric_search_params_ptr_.verbosity_);
+  const auto& collision_pairs = Core::GeometricSearch::collision_search(other_bounding_boxes,
+      beam_bounding_boxes, discret().get_comm(), geometric_search_params_ptr_.verbosity_);
 
   // Create the beam-to-xxx pair pointers according to the search.
   for (const auto& pair : collision_pairs)

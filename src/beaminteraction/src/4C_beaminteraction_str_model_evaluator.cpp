@@ -23,9 +23,9 @@
 #include "4C_coupling_adapter.hpp"
 #include "4C_coupling_adapter_converter.hpp"
 #include "4C_fem_general_utils_createdis.hpp"
+#include "4C_fem_geometry_periodic_boundingbox.hpp"
 #include "4C_geometric_search_bounding_volume.hpp"
 #include "4C_geometric_search_distributed_tree.hpp"
-#include "4C_fem_geometry_periodic_boundingbox.hpp"
 #include "4C_global_data.hpp"
 #include "4C_inpar_beam_to_solid.hpp"
 #include "4C_io.hpp"
@@ -205,8 +205,6 @@ void Solid::ModelEvaluator::BeamInteraction::setup()
   binstrategy_->set_deforming_binning_domain_handler(
       tim_int().get_data_sdyn_ptr()->get_periodic_bounding_box());
 
-  bindis_ = binstrategy_->bin_discret();
-
   // construct, init and setup beam crosslinker handler and binning strategy
   // todo: move this and its single call during partition to crosslinker submodel
   if (have_sub_model_type(Inpar::BeamInteraction::submodel_crosslinking))
@@ -238,7 +236,6 @@ void Solid::ModelEvaluator::BeamInteraction::setup()
 
   // some screen output
   Core::Rebalance::print_parallel_distribution(*ia_discret_);
-  Core::Rebalance::print_parallel_distribution(*bindis_);
 
   issetup_ = true;
 }
@@ -455,29 +452,26 @@ void Solid::ModelEvaluator::BeamInteraction::partition_problem()
       Global::Problem::instance()->geometric_search_params(),
       Global::Problem::instance()->io_params());
 
-  std::shared_ptr<const Core::LinAlg::Graph> enriched_graph = Core::Rebalance::build_monolithic_node_graph(
-      *ia_discret_, geometric_search_params_ptr_, ia_state_ptr_->get_dis_col_np());
-
+  std::shared_ptr<const Core::LinAlg::Graph> enriched_graph =
+      Core::Rebalance::build_monolithic_node_graph(
+          *ia_discret_, geometric_search_params_ptr_, ia_state_ptr_->get_dis_col_np());
 
   std::vector<std::pair<int, Core::GeometricSearch::BoundingVolume>> bounding_boxes;
   for (const auto element : ia_discret_->my_row_element_range())
   {
     bounding_boxes.emplace_back(std::make_pair(
-        element.global_id(), element.user_element()->get_bounding_volume(*ia_discret_, *ia_state_ptr_->get_dis_col_np(),
-                           geometric_search_params_ptr_)));
+        element.global_id(), element.user_element()->get_bounding_volume(*ia_discret_,
+                                 *ia_state_ptr_->get_dis_col_np(), geometric_search_params_ptr_)));
   }
   auto result = Core::GeometricSearch::global_collision_search(bounding_boxes, bounding_boxes,
       ia_discret_->get_comm(), geometric_search_params_ptr_.verbosity_);
-
 
   Teuchos::ParameterList rebalanceParams;
   rebalanceParams.set<std::string>("imbalance tol", std::to_string(1.1));
   rebalanceParams.set("partitioning method", "HYPERGRAPH");
 
-
   const auto [noderowmap, nodecolmap] =
       Core::Rebalance::rebalance_node_maps(*enriched_graph, rebalanceParams);
-
 
   // ia_discret_->redistribute(*noderowmap, *nodecolmap, true, false, true);
   bool assigndegreesoffreedom = true;
@@ -498,7 +492,8 @@ void Solid::ModelEvaluator::BeamInteraction::partition_problem()
 
   // these exports have set Filled()=false as all maps are invalid now
   int err = ia_discret_->fill_complete({.assign_degrees_of_freedom = assigndegreesoffreedom,
-    .init_elements = initelements, .do_boundary_conditions = doboundarycondition});
+      .init_elements = initelements,
+      .do_boundary_conditions = doboundarycondition});
 
   if (err) FOUR_C_THROW("fill_complete() returned err=%d", err);
 
@@ -507,80 +502,6 @@ void Solid::ModelEvaluator::BeamInteraction::partition_problem()
 
   // reset transformation
   update_coupling_adapter_and_matrix_transformation();
-
-#if 0
-  // store structure discretization in vector
-  std::vector<std::shared_ptr<Core::FE::Discretization>> discret_vec(1, ia_discret_);
-
-  // displacement vector according to periodic boundary conditions
-  std::vector<std::shared_ptr<Core::LinAlg::Vector<double>>> mutabledisnp(
-      1, std::make_shared<Core::LinAlg::Vector<double>>(*ia_discret_->dof_col_map()));
-  Core::LinAlg::export_to(*ia_state_ptr_->get_dis_np(), *mutabledisnp[0]);
-
-  std::vector<std::shared_ptr<const Core::LinAlg::Vector<double>>> disnp(
-      1, std::make_shared<Core::LinAlg::Vector<double>>(*mutabledisnp[0]));
-
-  // nodes, that are owned by a proc, are distributed to the bins of this proc
-  std::vector<std::map<int, std::vector<int>>> nodesinbin(1);
-
-  // weight for load balancing regarding the distribution of bins to procs
-  // (this is experimental, choose what gives you best results)
-  double const weight = 1.0;
-  // get optimal row distribution of bins to procs
-  rowbins_ =
-      binstrategy_->weighted_distribution_of_bins_to_procs(discret_vec, disnp, nodesinbin, weight);
-
-  // extract noderowmap because it will be called reset() after adding elements
-  std::shared_ptr<Core::LinAlg::Map> noderowmap =
-      std::make_shared<Core::LinAlg::Map>(*bindis_->node_row_map());
-  // delete old bins ( in case you partition during your simulation or after a restart)
-  bindis_->delete_elements();
-  binstrategy_->fill_bins_into_bin_discretization(*rowbins_);
-
-  // now node (=crosslinker) to bin (=element) relation needs to be
-  // established in binning discretization. Therefore some nodes need to
-  // change their owner according to the bins owner they reside in
-  if (have_sub_model_type(Inpar::BeamInteraction::submodel_crosslinking))
-    beam_crosslinker_handler_->distribute_linker_to_bins(noderowmap);
-
-  // determine boundary bins (physical boundary as well as boundary to other procs)
-  binstrategy_->determine_boundary_row_bins();
-
-  // determine one layer ghosting around boundary bins determined in previous step
-  binstrategy_->determine_boundary_col_bins();
-
-  // standard ghosting (if a proc owns a part of nodes (and therefore dofs) of
-  // an element, the element and the rest of its nodes and dofs are ghosted
-  std::shared_ptr<Core::LinAlg::Map> stdelecolmap;
-  std::shared_ptr<Core::LinAlg::Map> stdnodecolmapdummy;
-  binstrategy_->standard_discretization_ghosting(
-      ia_discret_, *rowbins_, ia_state_ptr_->get_dis_np(), stdelecolmap, stdnodecolmapdummy);
-
-  // distribute elements that can be cut by the periodic boundary to bins
-  std::shared_ptr<Core::LinAlg::Vector<double>> iadiscolnp =
-      std::make_shared<Core::LinAlg::Vector<double>>(*ia_discret_->dof_col_map());
-  Core::LinAlg::export_to(*ia_state_ptr_->get_dis_np(), *iadiscolnp);
-
-  binstrategy_->distribute_elements_to_bins_using_ele_aabb(*ia_discret_,
-      ia_discret_->my_row_element_range(), ia_state_ptr_->get_bin_to_row_ele_map(), iadiscolnp);
-
-  // build row elements to bin map
-  build_row_ele_to_bin_map();
-
-  // extend ghosting
-  extend_ghosting();
-
-  // assign Elements to bins
-  binstrategy_->remove_all_eles_from_bins();
-  binstrategy_->assign_eles_to_bins(*ia_discret_, ia_state_ptr_->get_extended_bin_to_row_ele_map(),
-      FourC::BeamInteraction::Utils::convert_element_to_bin_content_type);
-
-  // update maps of state vectors and matrices
-  update_maps();
-
-  // reset transformation
-  update_coupling_adapter_and_matrix_transformation();
-#endif
 }
 
 /*----------------------------------------------------------------------------*
@@ -871,26 +792,19 @@ void Solid::ModelEvaluator::BeamInteraction::write_restart(
   int const stepn = global_state().get_step_n();
   double const timen = global_state().get_time_n();
   std::shared_ptr<Core::IO::DiscretizationWriter> ia_writer = ia_discret_->writer();
-  std::shared_ptr<Core::IO::DiscretizationWriter> bin_writer = bindis_->writer();
 
   // write restart of ia_discret
   ia_writer->write_mesh(stepn, timen);
   ia_writer->new_step(stepn, timen);
 
-  // // mesh is not written to disc, only maximum node id is important for output
-  // // fixme: can we just write mesh
-  // bin_writer->write_only_nodes_in_new_field_group_to_control_file(stepn, timen, true);
-  // bin_writer->new_step(stepn, timen);
-
   // as we know that our maps have changed every time we write output, we can empty
   // the map cache as we can't get any advantage saving the maps anyway
   ia_writer->clear_map_cache();
-  // bin_writer->clear_map_cache();
 
   // sub model loop
   Vector::iterator some_iter;
   for (some_iter = me_vec_ptr_->begin(); some_iter != me_vec_ptr_->end(); ++some_iter)
-    (*some_iter)->write_restart(*ia_writer, *bin_writer);
+    (*some_iter)->write_restart(*ia_writer);
 }
 
 /*----------------------------------------------------------------------------*
@@ -912,16 +826,7 @@ void Solid::ModelEvaluator::BeamInteraction::read_restart(Core::IO::Discretizati
   // includes fill_complete()
   ia_reader.read_history_data(stepn);
 
-  // // rebuild bin discret correctly in case crosslinker were present
-  // // Fixme: do just read history data like with ia discret
-  // // read correct nodes
-  // Core::IO::DiscretizationReader bin_reader(bindis_, input_control_file, stepn);
-  // bin_reader.read_nodes_only(stepn);
-  // bindis_->fill_complete(false, false, false);
-
-  // // need to read step next (as it was written next, do safety check)
-  // if (stepn != ia_reader.read_int("step") or stepn != bin_reader.read_int("step"))
-  //   FOUR_C_THROW("Restart step not consistent with read restart step. ");
+  update_maps();
 
   // rebuild binning, Do we actually need this here?
   partition_problem();
@@ -1004,21 +909,21 @@ void Solid::ModelEvaluator::BeamInteraction::update_step_element()
   check_init_setup();
 
   // submodel loop
-  Vector::iterator sme_iter;
+  Vector::iterator some_iter;
   bool beam_redist = check_if_beam_discret_redistribution_needs_to_be_done();
   bool binning_redist = false;
-  for (sme_iter = me_vec_ptr_->begin(); sme_iter != me_vec_ptr_->end(); ++sme_iter)
-    binning_redist = (*sme_iter)->pre_update_step_element(beam_redist) ? true : binning_redist;
+  for (some_iter = me_vec_ptr_->begin(); some_iter != me_vec_ptr_->end(); ++some_iter)
+    binning_redist = (*some_iter)->pre_update_step_element(beam_redist) ? true : binning_redist;
 
   partition_problem();
 
   // submodel loop update
-  for (sme_iter = me_vec_ptr_->begin(); sme_iter != me_vec_ptr_->end(); ++sme_iter)
-    (*sme_iter)->update_step_element(binning_redist || beam_redist);
+  for (some_iter = me_vec_ptr_->begin(); some_iter != me_vec_ptr_->end(); ++some_iter)
+    (*some_iter)->update_step_element(binning_redist || beam_redist);
 
   // submodel post update
-  for (sme_iter = me_vec_ptr_->begin(); sme_iter != me_vec_ptr_->end(); ++sme_iter)
-    (*sme_iter)->post_update_step_element();
+  for (some_iter = me_vec_ptr_->begin(); some_iter != me_vec_ptr_->end(); ++some_iter)
+    (*some_iter)->post_update_step_element();
 
 
   return;
@@ -1087,12 +992,12 @@ void Solid::ModelEvaluator::BeamInteraction::update_step_element()
   update_coupling_adapter_and_matrix_transformation();
 
   // submodel loop update
-  for (sme_iter = me_vec_ptr_->begin(); sme_iter != me_vec_ptr_->end(); ++sme_iter)
-    (*sme_iter)->update_step_element(binning_redist || beam_redist);
+  for (some_iter = me_vec_ptr_->begin(); some_iter != me_vec_ptr_->end(); ++some_iter)
+    (*some_iter)->update_step_element(binning_redist || beam_redist);
 
   // submodel post update
-  for (sme_iter = me_vec_ptr_->begin(); sme_iter != me_vec_ptr_->end(); ++sme_iter)
-    (*sme_iter)->post_update_step_element();
+  for (some_iter = me_vec_ptr_->begin(); some_iter != me_vec_ptr_->end(); ++some_iter)
+    (*some_iter)->post_update_step_element();
 }
 
 /*----------------------------------------------------------------------------*
