@@ -23,6 +23,8 @@
 #include "4C_coupling_adapter.hpp"
 #include "4C_coupling_adapter_converter.hpp"
 #include "4C_fem_general_utils_createdis.hpp"
+#include "4C_geometric_search_bounding_volume.hpp"
+#include "4C_geometric_search_distributed_tree.hpp"
 #include "4C_fem_geometry_periodic_boundingbox.hpp"
 #include "4C_global_data.hpp"
 #include "4C_inpar_beam_to_solid.hpp"
@@ -33,6 +35,7 @@
 #include "4C_linalg_serialdensevector.hpp"
 #include "4C_linalg_utils_sparse_algebra_assemble.hpp"
 #include "4C_linalg_utils_sparse_algebra_manipulation.hpp"
+#include "4C_rebalance_graph_based.hpp"
 #include "4C_rebalance_print.hpp"
 #include "4C_rigidsphere.hpp"
 #include "4C_scatra_ele.hpp"
@@ -40,9 +43,12 @@
 #include "4C_structure_new_model_evaluator_data.hpp"
 #include "4C_structure_new_timint_base.hpp"
 #include "4C_structure_new_utils.hpp"
+#include "4C_utils_exceptions.hpp"
 #include "4C_utils_parameter_list.hpp"
 
 #include <Teuchos_TimeMonitor.hpp>
+
+#include <thread>
 
 FOUR_C_NAMESPACE_OPEN
 
@@ -445,6 +451,64 @@ void Solid::ModelEvaluator::BeamInteraction::partition_problem()
 {
   check_init();
 
+  const auto geometric_search_params_ptr_ = Core::GeometricSearch::GeometricSearchParams(
+      Global::Problem::instance()->geometric_search_params(),
+      Global::Problem::instance()->io_params());
+
+  std::shared_ptr<const Core::LinAlg::Graph> enriched_graph = Core::Rebalance::build_monolithic_node_graph(
+      *ia_discret_, geometric_search_params_ptr_, ia_state_ptr_->get_dis_col_np());
+
+
+  std::vector<std::pair<int, Core::GeometricSearch::BoundingVolume>> bounding_boxes;
+  for (const auto element : ia_discret_->my_row_element_range())
+  {
+    bounding_boxes.emplace_back(std::make_pair(
+        element.global_id(), element.user_element()->get_bounding_volume(*ia_discret_, *ia_state_ptr_->get_dis_col_np(),
+                           geometric_search_params_ptr_)));
+  }
+  auto result = Core::GeometricSearch::global_collision_search(bounding_boxes, bounding_boxes,
+      ia_discret_->get_comm(), geometric_search_params_ptr_.verbosity_);
+
+
+  Teuchos::ParameterList rebalanceParams;
+  rebalanceParams.set<std::string>("imbalance tol", std::to_string(1.1));
+  rebalanceParams.set("partitioning method", "HYPERGRAPH");
+
+
+  const auto [noderowmap, nodecolmap] =
+      Core::Rebalance::rebalance_node_maps(*enriched_graph, rebalanceParams);
+
+
+  // ia_discret_->redistribute(*noderowmap, *nodecolmap, true, false, true);
+  bool assigndegreesoffreedom = true;
+  bool initelements = false;
+  bool doboundarycondition = true;
+  bool killdofs = true;
+  bool killcond = true;
+
+  // build the overlapping and non-overlapping element maps
+  const auto& [elerowmap, elecolmap] =
+      ia_discret_->build_element_row_column(*noderowmap, *nodecolmap, true);
+
+  // export nodes and elements to the new maps
+  ia_discret_->export_row_nodes(*noderowmap, killdofs, killcond);
+  ia_discret_->export_column_nodes(*nodecolmap, killdofs, killcond);
+  ia_discret_->export_row_elements(*elerowmap, killdofs, killcond);
+  ia_discret_->export_column_elements(*elecolmap, killdofs, killcond);
+
+  // these exports have set Filled()=false as all maps are invalid now
+  int err = ia_discret_->fill_complete({.assign_degrees_of_freedom = assigndegreesoffreedom,
+    .init_elements = initelements, .do_boundary_conditions = doboundarycondition});
+
+  if (err) FOUR_C_THROW("fill_complete() returned err=%d", err);
+
+  // update maps of state vectors and matrices
+  update_maps();
+
+  // reset transformation
+  update_coupling_adapter_and_matrix_transformation();
+
+#if 0
   // store structure discretization in vector
   std::vector<std::shared_ptr<Core::FE::Discretization>> discret_vec(1, ia_discret_);
 
@@ -516,6 +580,7 @@ void Solid::ModelEvaluator::BeamInteraction::partition_problem()
 
   // reset transformation
   update_coupling_adapter_and_matrix_transformation();
+#endif
 }
 
 /*----------------------------------------------------------------------------*
@@ -812,15 +877,15 @@ void Solid::ModelEvaluator::BeamInteraction::write_restart(
   ia_writer->write_mesh(stepn, timen);
   ia_writer->new_step(stepn, timen);
 
-  // mesh is not written to disc, only maximum node id is important for output
-  // fixme: can we just write mesh
-  bin_writer->write_only_nodes_in_new_field_group_to_control_file(stepn, timen, true);
-  bin_writer->new_step(stepn, timen);
+  // // mesh is not written to disc, only maximum node id is important for output
+  // // fixme: can we just write mesh
+  // bin_writer->write_only_nodes_in_new_field_group_to_control_file(stepn, timen, true);
+  // bin_writer->new_step(stepn, timen);
 
   // as we know that our maps have changed every time we write output, we can empty
   // the map cache as we can't get any advantage saving the maps anyway
   ia_writer->clear_map_cache();
-  bin_writer->clear_map_cache();
+  // bin_writer->clear_map_cache();
 
   // sub model loop
   Vector::iterator some_iter;
@@ -847,23 +912,24 @@ void Solid::ModelEvaluator::BeamInteraction::read_restart(Core::IO::Discretizati
   // includes fill_complete()
   ia_reader.read_history_data(stepn);
 
-  // rebuild bin discret correctly in case crosslinker were present
-  // Fixme: do just read history data like with ia discret
-  // read correct nodes
-  Core::IO::DiscretizationReader bin_reader(bindis_, input_control_file, stepn);
-  bin_reader.read_nodes_only(stepn);
-  bindis_->fill_complete(Core::FE::OptionsFillComplete::none());
+  // // rebuild bin discret correctly in case crosslinker were present
+  // // Fixme: do just read history data like with ia discret
+  // // read correct nodes
+  // Core::IO::DiscretizationReader bin_reader(bindis_, input_control_file, stepn);
+  // bin_reader.read_nodes_only(stepn);
+  // bindis_->fill_complete(false, false, false);
 
-  // need to read step next (as it was written next, do safety check)
-  if (stepn != ia_reader.read_int("step") or stepn != bin_reader.read_int("step"))
-    FOUR_C_THROW("Restart step not consistent with read restart step. ");
+  // // need to read step next (as it was written next, do safety check)
+  // if (stepn != ia_reader.read_int("step") or stepn != bin_reader.read_int("step"))
+  //   FOUR_C_THROW("Restart step not consistent with read restart step. ");
 
-  // rebuild binning
+  // rebuild binning, Do we actually need this here?
   partition_problem();
+
 
   // sub model loop
   for (some_iter = me_vec_ptr_->begin(); some_iter != me_vec_ptr_->end(); ++some_iter)
-    (*some_iter)->read_restart(ia_reader, bin_reader);
+    (*some_iter)->read_restart(ia_reader);
 
   // post sub model loop
   for (some_iter = me_vec_ptr_->begin(); some_iter != me_vec_ptr_->end(); ++some_iter)
@@ -935,7 +1001,25 @@ void Solid::ModelEvaluator::BeamInteraction::update_step_element()
 {
   check_init_setup();
 
-  Vector::iterator some_iter;
+  // submodel loop
+  Vector::iterator sme_iter;
+  bool beam_redist = check_if_beam_discret_redistribution_needs_to_be_done();
+  bool binning_redist = false;
+  for (sme_iter = me_vec_ptr_->begin(); sme_iter != me_vec_ptr_->end(); ++sme_iter)
+    binning_redist = (*sme_iter)->pre_update_step_element(beam_redist) ? true : binning_redist;
+
+  partition_problem();
+
+  // submodel loop update
+  for (sme_iter = me_vec_ptr_->begin(); sme_iter != me_vec_ptr_->end(); ++sme_iter)
+    (*sme_iter)->update_step_element(binning_redist || beam_redist);
+
+  // submodel post update
+  for (sme_iter = me_vec_ptr_->begin(); sme_iter != me_vec_ptr_->end(); ++sme_iter)
+    (*sme_iter)->post_update_step_element();
+
+
+  return;
 
   /* the idea is the following: redistribution of elements is only necessary if
    * one node on any proc has moved "too far" compared to the time step of the
@@ -946,13 +1030,6 @@ void Solid::ModelEvaluator::BeamInteraction::update_step_element()
    */
 
   // repartition every time
-  bool beam_redist = check_if_beam_discret_redistribution_needs_to_be_done();
-
-  // submodel loop
-  bool binning_redist = false;
-  for (some_iter = me_vec_ptr_->begin(); some_iter != me_vec_ptr_->end(); ++some_iter)
-    binning_redist = (*some_iter)->pre_update_step_element(beam_redist) ? true : binning_redist;
-
   if (beam_redist)
   {
     binstrategy_->transfer_nodes_and_elements(
@@ -1008,12 +1085,12 @@ void Solid::ModelEvaluator::BeamInteraction::update_step_element()
   update_coupling_adapter_and_matrix_transformation();
 
   // submodel loop update
-  for (some_iter = me_vec_ptr_->begin(); some_iter != me_vec_ptr_->end(); ++some_iter)
-    (*some_iter)->update_step_element(binning_redist || beam_redist);
+  for (sme_iter = me_vec_ptr_->begin(); sme_iter != me_vec_ptr_->end(); ++sme_iter)
+    (*sme_iter)->update_step_element(binning_redist || beam_redist);
 
   // submodel post update
-  for (some_iter = me_vec_ptr_->begin(); some_iter != me_vec_ptr_->end(); ++some_iter)
-    (*some_iter)->post_update_step_element();
+  for (sme_iter = me_vec_ptr_->begin(); sme_iter != me_vec_ptr_->end(); ++sme_iter)
+    (*sme_iter)->post_update_step_element();
 }
 
 /*----------------------------------------------------------------------------*

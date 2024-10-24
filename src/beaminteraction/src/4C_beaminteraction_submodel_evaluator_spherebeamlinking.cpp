@@ -522,8 +522,7 @@ void BeamInteraction::SubmodelEvaluator::SphereBeamLinking::pre_read_restart()
 
 /*-------------------------------------------------------------------------------*
  *-------------------------------------------------------------------------------*/
-void BeamInteraction::SubmodelEvaluator::SphereBeamLinking::read_restart(
-    Core::IO::DiscretizationReader& ia_reader, Core::IO::DiscretizationReader& bin_reader)
+void BeamInteraction::SubmodelEvaluator::SphereBeamLinking::read_restart(Core::IO::DiscretizationReader& ia_reader)
 {
   check_init_setup();
 

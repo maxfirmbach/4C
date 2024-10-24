@@ -157,8 +157,7 @@ namespace BeamInteraction
       /*! \brief read model specific restart information
        *
        *  \param ioreader (in) : input reader*/
-      virtual void read_restart(Core::IO::DiscretizationReader& ia_writer,
-          Core::IO::DiscretizationReader& bin_writer) = 0;
+      virtual void read_restart(Core::IO::DiscretizationReader& ia_writer) = 0;
 
       //! \brief do stuff pre reading of model specific restart information
       virtual void pre_read_restart() = 0;

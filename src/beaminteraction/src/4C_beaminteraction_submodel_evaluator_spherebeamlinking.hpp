@@ -100,8 +100,7 @@ namespace BeamInteraction
       void pre_read_restart() override;
 
       //! derived
-      void read_restart(Core::IO::DiscretizationReader& ia_reader,
-          Core::IO::DiscretizationReader& bin_reader) override;
+      void read_restart(Core::IO::DiscretizationReader& ia_reader) override;
 
       //! derived
       void post_read_restart() override;

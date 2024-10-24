@@ -142,7 +142,8 @@ namespace Core::Rebalance
   */
   std::shared_ptr<const Core::LinAlg::Graph> build_monolithic_node_graph(
       const Core::FE::Discretization& dis,
-      const Core::GeometricSearch::GeometricSearchParams& params);
+      const Core::GeometricSearch::GeometricSearchParams& params,
+      const std::shared_ptr<const Core::LinAlg::Vector<double>>& disp_vec = nullptr);
 
 }  // namespace Core::Rebalance
 

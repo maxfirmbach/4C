@@ -1415,10 +1415,14 @@ void BeamInteraction::SubmodelEvaluator::Crosslinking::pre_read_restart()
 /*----------------------------------------------------------------------------*
  *----------------------------------------------------------------------------*/
 void BeamInteraction::SubmodelEvaluator::Crosslinking::read_restart(
-    Core::IO::DiscretizationReader& ia_reader, Core::IO::DiscretizationReader& bin_reader)
+    Core::IO::DiscretizationReader& ia_reader)
 {
   check_init_setup();
 
+
+  FOUR_C_THROW("Figure out how to do this without binning");
+
+#if 0
   // -------------------------------------------------------------------------
   // 1) read list of double bonded crosslinker on each proc
   // -------------------------------------------------------------------------
@@ -1542,6 +1546,7 @@ void BeamInteraction::SubmodelEvaluator::Crosslinking::read_restart(
 
   // init maps
   store_maps_prior_redistribution();
+#endif
 }
 
 /*----------------------------------------------------------------------------*

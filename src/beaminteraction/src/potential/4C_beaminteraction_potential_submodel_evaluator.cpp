@@ -583,8 +583,7 @@ void BeamInteraction::SubmodelEvaluator::BeamPotential::pre_read_restart()
 
 /*----------------------------------------------------------------------------*
  *----------------------------------------------------------------------------*/
-void BeamInteraction::SubmodelEvaluator::BeamPotential::read_restart(
-    Core::IO::DiscretizationReader& ia_reader, Core::IO::DiscretizationReader& bin_reader)
+void BeamInteraction::SubmodelEvaluator::BeamPotential::read_restart(Core::IO::DiscretizationReader& ia_reader)
 {
   // empty
 }

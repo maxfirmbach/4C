@@ -1621,7 +1621,7 @@ namespace Core::FE
     */
     std::pair<std::shared_ptr<Core::LinAlg::Map>, std::shared_ptr<Core::LinAlg::Map>>
     build_element_row_column(const Core::LinAlg::Map& noderowmap,
-        const Core::LinAlg::Map& nodecolmap, bool do_extended_ghosting = false) const;
+        const Core::LinAlg::Map& nodecolmap, bool find_ghost_elements_with_no_owned_node = false) const;
 
     /*!
     \brief Export the nodes to a different parallel layout
