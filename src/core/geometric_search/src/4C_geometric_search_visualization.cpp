@@ -13,6 +13,8 @@
 
 #include <utility>
 
+#include "ArborX_Box.hpp"
+
 FOUR_C_NAMESPACE_OPEN
 
 namespace Core::GeometricSearch
