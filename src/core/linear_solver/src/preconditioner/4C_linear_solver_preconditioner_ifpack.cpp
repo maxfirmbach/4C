@@ -7,8 +7,11 @@
 
 #include "4C_linear_solver_preconditioner_ifpack.hpp"
 
+#include "4C_comm_utils.hpp"
 #include "4C_linalg_blocksparsematrix.hpp"
 #include "4C_utils_exceptions.hpp"
+
+#include <Teuchos_XMLParameterListHelpers.hpp>
 
 FOUR_C_NAMESPACE_OPEN
 
@@ -18,7 +21,6 @@ Core::LinearSolver::IFPACKPreconditioner::IFPACKPreconditioner(
     Teuchos::ParameterList& ifpacklist, Teuchos::ParameterList& solverlist)
     : ifpacklist_(ifpacklist), solverlist_(solverlist)
 {
-  return;
 }
 
 //------------------------------------------------------------------------------
@@ -44,23 +46,31 @@ void Core::LinearSolver::IFPACKPreconditioner::setup(bool create, Epetra_Operato
 
     pmatrix_ = std::make_shared<Epetra_CrsMatrix>(*A_crs);
 
-    // get the type of ifpack preconditioner from solver parameter list
-    std::string prectype = solverlist_.get("Preconditioner Type", "ILU");
-    const int overlap = ifpacklist_.get("IFPACKOVERLAP", 0);
+    if (ifpacklist_.isParameter("IFPACK_XML_FILE"))
+    {
+      const std::string xmlFileName = ifpacklist_.get<std::string>("IFPACK_XML_FILE");
 
-    // create the preconditioner
-    Ifpack Factory;
-    prec_ =
-        std::shared_ptr<Ifpack_Preconditioner>(Factory.Create(prectype, pmatrix_.get(), overlap));
+      Teuchos::ParameterList ifpack_params;
 
-    if (!prec_) FOUR_C_THROW("Creation of IFPACK preconditioner of type '{}' failed.", prectype);
+      auto comm = Core::Communication::to_teuchos_comm<int>(
+          Core::Communication::unpack_epetra_comm(pmatrix_->Comm()));
 
-    // setup
-    prec_->SetParameters(ifpacklist_);
-    prec_->Initialize();
-    prec_->Compute();
+      Teuchos::updateParametersFromXmlFileAndBroadcast(
+          xmlFileName, Teuchos::Ptr(&ifpack_params), *comm);
 
-    return;
+      const std::string prectype = ifpack_params.get<std::string>("Preconditioner type");
+      const int overlap = ifpack_params.get<int>("Overlap");
+
+      Ifpack Factory;
+      prec_ =
+          std::shared_ptr<Ifpack_Preconditioner>(Factory.Create(prectype, pmatrix_.get(), overlap));
+
+      if (!prec_) FOUR_C_THROW("Creation of IFPACK preconditioner of type '{}' failed.", prectype);
+
+      prec_->SetParameters(ifpack_params);
+      prec_->Initialize();
+      prec_->Compute();
+    }
   }
 }
 
