@@ -33,6 +33,9 @@ void Inpar::Rebalance::set_valid_parameters(Teuchos::ParameterList& list)
       "Tolerance for relative imbalance of subdomain sizes for graph partitioning of unstructured "
       "meshes read from input files.",
       &meshpartitioning);
+
+  Core::Utils::int_parameter("MIN_ELEPROC", 0,
+      "Minimum no. of elements per processor for parallel redistribution.", &meshpartitioning);
 }
 
 FOUR_C_NAMESPACE_CLOSE

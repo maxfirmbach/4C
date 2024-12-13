@@ -138,8 +138,21 @@ void Core::IO::MeshReader::rebalance()
     Teuchos::ParameterList rebalanceParams;
     rebalanceParams.set<std::string>("imbalance tol", std::to_string(imbalance_tol));
 
+    const int minele_per_proc = parameters_.mesh_paritioning_parameters.get<int>("MIN_ELEPROC");
+    const int max_global_procs = Core::Communication::num_mpi_ranks(comm_);
+    int min_global_procs = max_global_procs;
+
+    if (minele_per_proc > 0)
+      min_global_procs =
+          element_readers_[i].get_row_elements()->NumGlobalElements() / minele_per_proc;
+    const int procs = min_global_procs > max_global_procs ? max_global_procs : min_global_procs;
+    rebalanceParams.set<std::string>("num parts", std::to_string(procs));
+
     const auto rebalanceMethod = Teuchos::getIntegralValue<Core::Rebalance::RebalanceType>(
         parameters_.mesh_paritioning_parameters, "METHOD");
+
+    if (!Core::Communication::my_mpi_rank(comm_))
+      std::cout << "\nProcs used for redistribution: " << procs << "\n";
 
     std::shared_ptr<Epetra_Map> rowmap, colmap;
 
@@ -149,6 +162,11 @@ void Core::IO::MeshReader::rebalance()
       {
         case Core::Rebalance::RebalanceType::hypergraph:
         {
+          if (!Core::Communication::my_mpi_rank(comm_))
+            std::cout << "Redistributing using "
+                      << "hypergraph"
+                      << " .........\n";
+
           rebalanceParams.set("partitioning method", "HYPERGRAPH");
 
           // here we can reuse the graph, which was calculated before, this saves us some time
@@ -159,6 +177,11 @@ void Core::IO::MeshReader::rebalance()
         }
         case Core::Rebalance::RebalanceType::recursive_coordinate_bisection:
         {
+          if (!Core::Communication::my_mpi_rank(comm_))
+            std::cout << "Redistributing using "
+                      << "recursive coordinate bisection"
+                      << " .........\n";
+
           rebalanceParams.set("partitioning method", "RCB");
 
           // here we can reuse the graph, which was calculated before, this saves us some time and
@@ -186,6 +209,11 @@ void Core::IO::MeshReader::rebalance()
         }
         case Core::Rebalance::RebalanceType::monolithic:
         {
+          if (!Core::Communication::my_mpi_rank(comm_))
+            std::cout << "Redistributing using "
+                      << "monolithic hypergraph"
+                      << " .........\n";
+
           rebalanceParams.set("partitioning method", "HYPERGRAPH");
 
           rowmap = std::make_shared<Epetra_Map>(-1, graph_[i]->RowMap().NumMyElements(),
