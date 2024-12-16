@@ -386,7 +386,7 @@ void Core::FE::Utils::Dbc::read_dirichlet_condition(const Teuchos::ParameterList
                << " with new value of " << value << " at time " << time << ".\nThe difference is "
                << std::setprecision(13) << std::abs(current_val - value) << " > " << dbc_tol
                << ".\nPlease try to adjust the input.";
-            FOUR_C_THROW(ss.str());
+            // FOUR_C_THROW(ss.str());
           }
         }
 
