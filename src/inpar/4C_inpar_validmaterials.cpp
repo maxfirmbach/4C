@@ -2585,17 +2585,6 @@ std::shared_ptr<std::vector<std::shared_ptr<Mat::MaterialDefinition>>> Input::va
   }
 
   /*--------------------------------------------------------------------*/
-  // isotropic Fourier's law
-  {
-    auto m = std::make_shared<Mat::MaterialDefinition>("THERM_FourierIso",
-        "isotropic (linear) Fourier's law of heat conduction", Core::Materials::m_th_fourier_iso);
-
-    m->add_component(entry<double>("CAPA", {.description = "volumetric heat capacity"}));
-    m->add_component(entry<double>("CONDUCT", {.description = "Scalar thermal conductivity"}));
-    Mat::append_material_definition(matlist, m);
-  }
-
-  /*--------------------------------------------------------------------*/
   // generic Fourier's law
   {
     auto m = std::make_shared<Mat::MaterialDefinition>("MAT_Fourier",

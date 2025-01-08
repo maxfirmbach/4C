@@ -903,10 +903,6 @@ std::unique_ptr<Core::Mat::PAR::Parameter> Mat::make_parameter(
     {
       return make_parameter_impl<Mat::PAR::Fourier>(id, type, input_data);
     }
-    case Core::Materials::m_th_fourier_iso:
-    {
-      return make_parameter_impl<Mat::PAR::FourierIso>(id, type, input_data);
-    }
     case Core::Materials::m_soret:
     {
       return make_parameter_impl<Mat::PAR::Soret>(id, type, input_data);

@@ -221,8 +221,6 @@ std::string_view Core::Materials::to_string(Core::Materials::MaterialType materi
       return "VISCO_BRANCH";
     case m_cnst_art:
       return "MAT_CNST_ART";
-    case m_th_fourier_iso:
-      return "THERM_FourierIso";
     case m_thermo_fourier:
       return "MAT_Fourier";
     case m_soret:
