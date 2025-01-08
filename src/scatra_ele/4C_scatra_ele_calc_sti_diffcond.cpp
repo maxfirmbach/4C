@@ -702,9 +702,14 @@ void Discret::Elements::ScaTraEleCalcSTIDiffCond<distype>::mat_soret(
   const std::shared_ptr<const Mat::Soret> matsoret =
       std::static_pointer_cast<const Mat::Soret>(material);
   densn = densnp = densam = matsoret->capacity();
-  diff_manager()->set_isotropic_diff(matsoret->conductivity(), 0);
+
+  std::vector<double> k = matsoret->conductivity();
+  FOUR_C_ASSERT(k.size() != 1, "Conductivity value is a vector quantity, but has to be a scalar.");
+
+  diff_manager()->set_isotropic_diff(k[0], 0);
+
   diff_manager()->set_soret(matsoret->soret_coefficient());
-}  // Discret::Elements::ScaTraEleCalcSTIDiffCond<distype>::mat_soret
+}
 
 /*----------------------------------------------------------------------*
  *----------------------------------------------------------------------*/
