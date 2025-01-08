@@ -60,9 +60,7 @@ void Mat::FourierAniso::pack(Core::Communication::PackBuffer& data) const
   int type = unique_par_object_id();
   add_to_pack(data, type);
 
-  // matid
-  int matid = -1;
-  if (params_ != nullptr) matid = params_->id();  // in case we are in post-process mode
+  int matid = params_->id();
   add_to_pack(data, matid);
 }
 
@@ -82,11 +80,12 @@ void Mat::FourierAniso::unpack(Core::Communication::UnpackBuffer& buffer)
       const int probinst = Global::Problem::instance()->materials()->get_read_from_problem();
       Core::Mat::PAR::Parameter* mat =
           Global::Problem::instance(probinst)->materials()->parameter_by_id(matid);
-      if (mat->type() == material_type())
-        params_ = static_cast<Mat::PAR::FourierAniso*>(mat);
-      else
-        FOUR_C_THROW("Type of parameter material %d does not fit to calling type %d", mat->type(),
-            material_type());
+
+      FOUR_C_ASSERT_ALWAYS(mat->type() == material_type(),
+          "Type of parameter material %d does not fit to calling type %d", mat->type(),
+          material_type());
+
+      params_ = static_cast<Mat::PAR::FourierAniso*>(mat);
     }
 }
 
