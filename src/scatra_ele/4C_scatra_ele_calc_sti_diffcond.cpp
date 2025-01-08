@@ -7,6 +7,7 @@
 
 #include "4C_scatra_ele_calc_sti_diffcond.hpp"
 
+#include "4C_mat_fourier.hpp"
 #include "4C_mat_soret.hpp"
 #include "4C_scatra_ele_calc_elch_diffcond.hpp"
 #include "4C_scatra_ele_parameter_std.hpp"
@@ -716,11 +717,16 @@ void Discret::Elements::ScaTraEleCalcSTIDiffCond<distype>::mat_fourier(
 )
 {
   // extract material parameters from Soret material
-  const std::shared_ptr<const Mat::FourierIso> matfourier =
-      std::static_pointer_cast<const Mat::FourierIso>(material);
+  const std::shared_ptr<const Mat::Fourier> matfourier =
+      std::static_pointer_cast<const Mat::Fourier>(material);
+
   densn = densnp = densam = matfourier->capacity();
-  diff_manager()->set_isotropic_diff(matfourier->conductivity(), 0);
-}  // Discret::Elements::ScaTraEleCalcSTIDiffCond<distype>::mat_soret
+
+  std::vector<double> k = matfourier->conductivity();
+  FOUR_C_ASSERT(k.size() != 1, "Conductivity value is a vector quantity, but has to be a scalar.");
+
+  diff_manager()->set_isotropic_diff(k[0], 0);
+}
 
 
 /*------------------------------------------------------------------------------*
