@@ -2591,8 +2591,9 @@ std::shared_ptr<std::vector<std::shared_ptr<Mat::MaterialDefinition>>> Input::va
         "isotropic (linear) Fourier's law of heat conduction", Core::Materials::m_th_fourier_iso);
 
     m->add_component(entry<double>("CAPA", {.description = "volumetric heat capacity"}));
-    m->add_component(entry<double>("CONDUCT", {.description = "thermal conductivity"}));
-
+    m->add_component(entry<std::vector<double>>(
+        "CONDUCT", {.description = "Values defining the row-wise thermal conductivity tensor",
+                       .size = from_parameter<int>("CONDUCT_PARA_NUM")}));
     Mat::append_material_definition(matlist, m);
   }
 
@@ -2603,11 +2604,12 @@ std::shared_ptr<std::vector<std::shared_ptr<Mat::MaterialDefinition>>> Input::va
         "anisotropic (linear) Fourier's law of heat conduction",
         Core::Materials::m_th_fourier_aniso);
 
-    add_named_real(m, "CAPA", "volumetric heat capacity");
-    add_named_int(m, "NUMSPACEDIM", "Number of space dimension");
-    add_named_real_vector(m, "CONDUCT",
-        "Diagonal tensor values defining the thermal conductivity in each space direction",
-        "NUMSPACEDIM");
+    m->add_component(entry<double>("CAPA", {.description = "volumetric heat capacity"}));
+    m->add_component(entry<int>(
+        "CONDUCT_PARA_NUM", {.description = "Number of thermal conductivity parameters"}));
+    m->add_component(entry<std::vector<double>>(
+        "CONDUCT", {.description = "Values defining the row-wise thermal conductivity tensor",
+                       .size = from_parameter<int>("CONDUCT_PARA_NUM")}));
 
     Mat::append_material_definition(matlist, m);
   }

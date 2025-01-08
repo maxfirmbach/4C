@@ -109,7 +109,8 @@ void Mat::FourierAniso::evaluate(const Core::LinAlg::Matrix<2, 1>& gradtemp,
 {
   // conductivity tensor
   cmat.clear();
-  for (int i = 0; i < 2; ++i) cmat(i, i) = params_->conduct_[i];
+  for (int i = 0; i < 2; ++i)
+    for (int j = 0; j < 2; ++j) cmat(i, j) = params_->conduct_[j + 2 * i];
 
   // heatflux
   heatflux.multiply_nn(cmat, gradtemp);
@@ -122,7 +123,8 @@ void Mat::FourierAniso::evaluate(const Core::LinAlg::Matrix<3, 1>& gradtemp,
 {
   // conductivity tensor
   cmat.clear();
-  for (int i = 0; i < 3; ++i) cmat(i, i) = params_->conduct_[i];
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 3; ++j) cmat(i, j) = params_->conduct_[j + 3 * i];
 
   // heatflux
   heatflux.multiply_nn(cmat, gradtemp);

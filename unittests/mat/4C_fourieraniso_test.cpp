@@ -11,8 +11,8 @@
 #include "4C_global_data.hpp"
 #include "4C_mat_fourieraniso.hpp"
 #include "4C_mat_material_factory.hpp"
-#include "4C_material_base.hpp"
 #include "4C_mat_par_bundle.hpp"
+#include "4C_material_base.hpp"
 #include "4C_material_parameter_base.hpp"
 #include "4C_unittest_utils_assertions_test.hpp"
 #include "4C_utils_singleton_owner.hpp"
@@ -27,22 +27,24 @@ namespace
     void SetUp() override
     {
       Core::IO::InputParameterContainer container;
-      container.add("NUMSPACEDIM", num_space_dim_);
+      container.add("CONDUCT_PARA_NUM", conduct_para_num_);
       container.add("CAPA", capa_);
       container.add("CONDUCT", conduct_);
 
-      parameters_fourieraniso_ = std::shared_ptr(Mat::make_parameter(1, Core::Materials::MaterialType::m_th_fourier_aniso, container));
+      parameters_fourieraniso_ = std::shared_ptr(
+          Mat::make_parameter(1, Core::Materials::MaterialType::m_th_fourier_aniso, container));
 
       Global::Problem* problem = Global::Problem::instance();
       problem->materials()->set_read_from_problem(0);
       problem->materials()->insert(1, parameters_fourieraniso_);
 
-      fourieraniso_ = std::make_shared<Mat::FourierAniso>(dynamic_cast<Mat::PAR::FourierAniso*>(parameters_fourieraniso_.get()));
+      fourieraniso_ = std::make_shared<Mat::FourierAniso>(
+          dynamic_cast<Mat::PAR::FourierAniso*>(parameters_fourieraniso_.get()));
     }
 
-    const int num_space_dim_ = 3;
+    const int conduct_para_num_ = 9;
     const double capa_ = 420.0;
-    const std::vector<double> conduct_ = {1.0, 10.0, 100.0};
+    const std::vector<double> conduct_ = {1.0, 0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 100.0};
 
     std::shared_ptr<Core::Mat::PAR::Parameter> parameters_fourieraniso_;
     std::shared_ptr<Mat::FourierAniso> fourieraniso_;
@@ -61,9 +63,8 @@ namespace
     ref_heatflux(2, 0) = 100.0;
 
     Core::LinAlg::Matrix<3, 3> ref_cmat(true);
-    ref_cmat(0, 0) = conduct_[0];
-    ref_cmat(1, 1) = conduct_[1];
-    ref_cmat(2, 2) = conduct_[2];
+    for (int row = 0; row < 3; row++)
+      for (int col = 0; col < 3; col++) ref_cmat(row, col) = conduct_[col + 3 * row];
 
     Core::LinAlg::Matrix<3, 1> gradtemp(true);
     gradtemp(0, 0) = 4.0;
@@ -95,9 +96,8 @@ namespace
     ref_heatflux(2, 0) = 100.0;
 
     Core::LinAlg::Matrix<3, 3> ref_cmat(true);
-    ref_cmat(0, 0) = conduct_[0];
-    ref_cmat(1, 1) = conduct_[1];
-    ref_cmat(2, 2) = conduct_[2];
+    for (int row = 0; row < 3; row++)
+      for (int col = 0; col < 3; col++) ref_cmat(row, col) = conduct_[col + 3 * row];
 
     Core::LinAlg::Matrix<3, 1> gradtemp(true);
     gradtemp(0, 0) = 4.0;
