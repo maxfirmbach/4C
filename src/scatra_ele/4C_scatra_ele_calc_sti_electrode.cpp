@@ -112,7 +112,7 @@ void Discret::Elements::ScaTraEleCalcSTIElectrode<distype>::sysmat(
     // matrix and vector contributions arising from source terms
     if (ele->material()->material_type() == Core::Materials::m_soret)
       mystielch::calc_mat_and_rhs_source(emat, erhs, timefacfac, rhsfac);
-    else if (ele->material()->material_type() == Core::Materials::m_th_fourier_iso)
+    else if (ele->material()->material_type() == Core::Materials::m_thermo_fourier)
       calc_mat_and_rhs_joule(emat, erhs, timefacfac, rhsfac);
   }  // loop over integration points
 }
@@ -342,7 +342,7 @@ void Discret::Elements::ScaTraEleCalcSTIElectrode<distype>::sysmat_od_thermo_sca
     // w.r.t. scatra dofs
     if (ele->material()->material_type() == Core::Materials::m_soret)
       mystielch::calc_mat_source_od(emat, my::scatraparatimint_->time_fac() * fac);
-    else if (ele->material()->material_type() == Core::Materials::m_th_fourier_iso)
+    else if (ele->material()->material_type() == Core::Materials::m_thermo_fourier)
       calc_mat_joule_od(emat, my::scatraparatimint_->time_fac() * fac);
   }
 }
@@ -556,7 +556,7 @@ void Discret::Elements::ScaTraEleCalcSTIElectrode<distype>::get_material_params(
   std::shared_ptr<const Core::Mat::Material> material = ele->material();
   if (material->material_type() == Core::Materials::m_soret)
     mat_soret(material, densn[0], densnp[0], densam[0]);
-  else if (material->material_type() == Core::Materials::m_th_fourier_iso)
+  else if (material->material_type() == Core::Materials::m_thermo_fourier)
     mat_fourier(material, densn[0], densnp[0], densam[0]);
   else
     FOUR_C_THROW("Invalid thermal material!");
