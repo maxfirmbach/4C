@@ -367,6 +367,13 @@ Adapter::ScaTraBaseAlgorithm::ScaTraBaseAlgorithm(const Teuchos::ParameterList& 
     {
       switch (timintscheme)
       {
+        case Inpar::ScaTra::timeint_stationary:
+        {
+          // ScaTra::TimIntStationary
+          scatra_ = std::make_shared<ScaTra::TimIntCardiacMonodomainStationary>(
+              discret, solver, cmonoparams, scatratimeparams, extraparams, output);
+          break;
+        }
         case Inpar::ScaTra::timeint_gen_alpha:
         {
           // create instance of time integration class (call the constructor)

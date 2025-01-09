@@ -14,12 +14,40 @@
 #include "4C_scatra_timint_cardiac_monodomain.hpp"
 #include "4C_scatra_timint_genalpha.hpp"
 #include "4C_scatra_timint_ost.hpp"
+#include "4C_scatra_timint_stat.hpp"
 
 FOUR_C_NAMESPACE_OPEN
 
 
 namespace ScaTra
 {
+  class TimIntCardiacMonodomainStationary : public virtual TimIntCardiacMonodomain,
+                                            public virtual TimIntStationary
+  {
+   public:
+    //! Standard Constructor
+    TimIntCardiacMonodomainStationary(std::shared_ptr<Core::FE::Discretization> dis,
+        std::shared_ptr<Core::LinAlg::Solver> solver,
+        std::shared_ptr<Teuchos::ParameterList> params,
+        std::shared_ptr<Teuchos::ParameterList> sctratimintparams,
+        std::shared_ptr<Teuchos::ParameterList> extraparams,
+        std::shared_ptr<Core::IO::DiscretizationWriter> output);
+
+    //! setup time integration scheme
+    void setup() override;
+
+    //! Update the solution after convergence of the nonlinear iteration.
+    //! Current solution becomes old solution of next timestep.
+    void update() override;
+
+    //! read restart data
+    void read_restart(
+        const int step, std::shared_ptr<Core::IO::InputControl> input = nullptr) override;
+
+   protected:
+    void write_restart() const override;
+  };
+
   class TimIntCardiacMonodomainOST : public virtual TimIntCardiacMonodomain,
                                      public virtual TimIntOneStepTheta
   {

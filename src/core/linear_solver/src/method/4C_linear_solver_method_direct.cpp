@@ -15,6 +15,9 @@
 #include <Amesos_Umfpack.h>
 #include <Epetra_LinearProblem.h>
 
+// TODO: remove later!
+#include "4C_linalg_utils_sparse_algebra_print.hpp"
+
 FOUR_C_NAMESPACE_OPEN
 
 //----------------------------------------------------------------------------------
@@ -39,6 +42,10 @@ void Core::LinearSolver::DirectSolver<MatrixType, VectorType>::setup(
     std::shared_ptr<Core::LinAlg::KrylovProjector> projector)
 {
   std::shared_ptr<Epetra_CrsMatrix> crsA = std::dynamic_pointer_cast<Epetra_CrsMatrix>(matrix);
+
+  // TODO: remove later!
+  Core::LinAlg::print_matrix_in_matlab_format("Poisson.mm", *crsA);
+  exit(1);
 
   // 1. merge the block system matrix into a standard sparse matrix if necessary
   if (!crsA)

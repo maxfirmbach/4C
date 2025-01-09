@@ -63,14 +63,7 @@ void scatra_cardiac_monodomain_dyn(int restart)
   // access the problem-specific parameter list
   const Teuchos::ParameterList& scatradyn = problem->scalar_transport_dynamic_params();
 
-  // access the fluid discretization
-  std::shared_ptr<Core::FE::Discretization> fluiddis = problem->get_dis("fluid");
-  // access the scatra discretization
   std::shared_ptr<Core::FE::Discretization> scatradis = problem->get_dis("scatra");
-
-  // ensure that all dofs are assigned in the right order; this creates dof numbers with
-  //       fluid dof < scatra dof
-  fluiddis->fill_complete();
   scatradis->fill_complete();
 
   // set velocity field

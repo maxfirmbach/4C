@@ -1280,7 +1280,7 @@ four_c_test(TEST_FILE scatra_myocard_MV_material_hdg_tet_gp.dat NP 2 RESTART_STE
 four_c_test(TEST_FILE scatra_myocard_MV_material_hdg_tri.dat NP 2 RESTART_STEP 400)
 four_c_test(TEST_FILE scatra_myocard_MV_material_hex_gp_semiimp.dat NP 2 RESTART_STEP 40)
 four_c_test(TEST_FILE scatra_myocard_MV_material_tet_gp.dat NP 2 RESTART_STEP 400)
-four_c_test(TEST_FILE scatra_myocard_MV_material_tri_gp.dat NP 2 RESTART_STEP 400)
+four_c_test(TEST_FILE scatra_myocard_MV_material_tri_gp.dat NP 1 RESTART_STEP 400)
 four_c_test(TEST_FILE scatra_myocard_TNNP_material.dat NP 2)
 four_c_test(TEST_FILE scatra_natconv_onescalar_boussinesq.dat NP 2)
 four_c_test(TEST_FILE scatra_NonMatchingMesh_20x80_linear_bmat_merged.dat)

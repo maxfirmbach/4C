@@ -14,6 +14,61 @@
 
 FOUR_C_NAMESPACE_OPEN
 
+/*----------------------------------------------------------------------*
+ *----------------------------------------------------------------------*/
+ScaTra::TimIntCardiacMonodomainStationary::TimIntCardiacMonodomainStationary(
+    std::shared_ptr<Core::FE::Discretization> actdis, std::shared_ptr<Core::LinAlg::Solver> solver,
+    std::shared_ptr<Teuchos::ParameterList> params,
+    std::shared_ptr<Teuchos::ParameterList> sctratimintparams,
+    std::shared_ptr<Teuchos::ParameterList> extraparams,
+    std::shared_ptr<Core::IO::DiscretizationWriter> output)
+    : ScaTraTimIntImpl(actdis, solver, sctratimintparams, extraparams, output),
+      TimIntCardiacMonodomain(actdis, solver, params, sctratimintparams, extraparams, output),
+      TimIntStationary(actdis, solver, sctratimintparams, extraparams, output)
+{
+}
+
+/*----------------------------------------------------------------------*
+ *----------------------------------------------------------------------*/
+void ScaTra::TimIntCardiacMonodomainStationary::setup()
+{
+  TimIntStationary::setup();
+  TimIntCardiacMonodomain::setup();
+}
+
+/*----------------------------------------------------------------------*
+ *----------------------------------------------------------------------*/
+void ScaTra::TimIntCardiacMonodomainStationary::update()
+{
+  TimIntStationary::update();
+  TimIntCardiacMonodomain::element_material_time_update();
+}
+
+/*----------------------------------------------------------------------*
+ *----------------------------------------------------------------------*/
+void ScaTra::TimIntCardiacMonodomainStationary::write_restart() const
+{
+  TimIntStationary::write_restart();
+  TimIntCardiacMonodomain::write_restart();
+
+  output_->write_mesh(step_, time_);
+}
+
+/*----------------------------------------------------------------------*
+ -----------------------------------------------------------------------*/
+void ScaTra::TimIntCardiacMonodomainStationary::read_restart(
+    const int step, std::shared_ptr<Core::IO::InputControl> input)
+{
+  TimIntStationary::read_restart(step, input);
+
+  Core::IO::DiscretizationReader reader(
+      discret_, Global::Problem::instance()->input_control_file(), step);
+
+  reader.read_vector(activation_time_np_, "activation_time_np");
+  reader.read_history_data(step);
+}
+
+
 
 /*----------------------------------------------------------------------*
  |  Constructor (public)                                     ljag 01/14 |

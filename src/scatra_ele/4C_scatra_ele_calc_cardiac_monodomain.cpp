@@ -314,9 +314,12 @@ void Discret::Elements::ScaTraEleCalcCardiacMonodomain<distype,
   my::extract_element_and_node_values(ele, params, discretization, la);
 
   // extract additional local values from global vector
-  std::shared_ptr<const Core::LinAlg::Vector<double>> phin = discretization.get_state("phin");
-  if (phin == nullptr) FOUR_C_THROW("Cannot get state vector 'phin'");
-  Core::FE::extract_my_values<Core::LinAlg::Matrix<nen_, 1>>(*phin, my::ephin_, la[0].lm_);
+  if (discretization.has_state("phin"))
+  {
+    std::shared_ptr<const Core::LinAlg::Vector<double>> phin = discretization.get_state("phin");
+    if (phin == nullptr) FOUR_C_THROW("Cannot get state vector 'phin'");
+    Core::FE::extract_my_values<Core::LinAlg::Matrix<nen_, 1>>(*phin, my::ephin_, la[0].lm_);
+  }
 }
 
 
