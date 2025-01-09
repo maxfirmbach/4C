@@ -592,7 +592,7 @@ void Discret::Elements::ScaTraEleCalcSTIElectrode<distype>::mat_soret(
   densn = densnp = densam = matsoret->capacity();
 
   std::vector<double> k = matsoret->conductivity();
-  FOUR_C_ASSERT(k.size() != 1, "Conductivity value is a vector quantity, but has to be a scalar.");
+  FOUR_C_ASSERT(k.size() == 1, "Conductivity value needs to be a scalar quantity.");
 
   diff_manager()->set_isotropic_diff(k[0], 0);
 
@@ -615,7 +615,7 @@ void Discret::Elements::ScaTraEleCalcSTIElectrode<distype>::mat_fourier(
   densn = densnp = densam = matfourier->capacity();
 
   std::vector<double> k = matfourier->conductivity();
-  FOUR_C_ASSERT(k.size() != 1, "Conductivity value is a vector quantity, but has to be a scalar.");
+  FOUR_C_ASSERT(k.size() == 1, "Conductivity value needs to be a scalar quantity.");
 
   diff_manager()->set_isotropic_diff(k[0], 0);
 }

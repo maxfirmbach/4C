@@ -160,7 +160,7 @@ void Discret::Elements::ScaTraEleSTIThermo<distype>::mat_soret(
       std::static_pointer_cast<const Mat::Soret>(material);
 
   std::vector<double> k = matsoret->conductivity();
-  FOUR_C_ASSERT(k.size() != 1, "Conductivity value is a vector quantity, but has to be a scalar.");
+  FOUR_C_ASSERT(k.size() == 1, "Conductivity value needs to be a scalar quantity.");
 
   diffmanagerstithermo_->set_isotropic_diff(k[0], 0);
 
