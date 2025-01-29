@@ -77,49 +77,6 @@ namespace Core::LinearSolver
     Teuchos::RCP<MueLu::Hierarchy<Scalar, LocalOrdinal, GlobalOrdinal, Node>> H_;
 
   };  // class MueLuPreconditioner
-
-  /*! \brief MueLu preconditioner for blocked linear systems of equations for contact problems
-   * in saddlepoint formulation.
-   *
-   *  T. A. Wiesner, M. Mayr, A. Popp, M. W. Gee, W. A. Wall: Algebraic multigrid methods for
-   * saddle point systems arising from mortar contact formulations, International Journal for
-   * Numerical Methods in Engineering, 122(15):3749-3779, 2021, https://doi.org/10.1002/nme.6680
-   */
-  class MueLuContactSpPreconditioner : public MueLuPreconditioner
-  {
-   public:
-    MueLuContactSpPreconditioner(Teuchos::ParameterList& muelulist);
-
-    /*! \brief Create and compute the preconditioner
-     *
-     * The saddle-point preconditioner only works for matrices of the type
-     * BlockSparseMatrix. We assume the structure and block indices to be
-     * \f[
-     * A = \left[\begin{array}{cc}
-     *       A_{11} & A_{12}\\
-     *       A_{21} & A_{22}
-     *     \end{array}\right]
-     * \f]
-     * We check whether the input \c matrix is of proper type and throw an
-     * error if not.
-     *
-     * This routine either re-create the entire preconditioner from scratch or
-     * it re-uses the existing preconditioner and only updates the fine level matrix
-     * for the Krylov solver.
-     *
-     * @param create Boolean flag to enforce (re-)creation of the preconditioner
-     * @param matrix BlockSparseMatrix to be used as input for the preconditioner
-     * @param x Solution of the linear system
-     * @param b Right-hand side of the linear system
-     */
-    void setup(bool create, Epetra_Operator* matrix, Core::LinAlg::MultiVector<double>* x,
-        Core::LinAlg::MultiVector<double>* b) override;
-
-   private:
-    //! system of equations used for preconditioning used by P_ only
-    Teuchos::RCP<Core::LinAlg::BlockSparseMatrixBase> pmatrix_;
-
-  };  // class MueLuContactSpPreconditioner
 }  // namespace Core::LinearSolver
 
 FOUR_C_NAMESPACE_CLOSE

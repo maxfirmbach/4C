@@ -489,13 +489,13 @@ Adapter::StructureBaseAlgorithm::create_contact_meshtying_solver(
           sol != Core::LinearSolver::SolverType::superlu)
       {
         // if an iterative solver is chosen we need a block preconditioner
-        if (prec != Core::LinearSolver::PreconditionerType::multigrid_muelu_contactsp &&
+        if (prec != Core::LinearSolver::PreconditionerType::multigrid_muelu &&
             prec != Core::LinearSolver::PreconditionerType::block_teko &&
             prec != Core::LinearSolver::PreconditionerType::ilu)
           FOUR_C_THROW(
               "You have chosen an iterative linear solver. For mortar meshtying/contact problems "
               "in saddle-point formulation, a block preconditioner is required. Choose an "
-              "appropriate block preconditioner such as CheapSIMPLE or MueLu_contactSP "
+              "appropriate block preconditioner such as CheapSIMPLE or MueLu "
               "(if MueLu is available) in the SOLVER %i block in your input file.",
               linsolvernumber);
       }
@@ -533,8 +533,12 @@ Adapter::StructureBaseAlgorithm::create_contact_meshtying_solver(
               "STRUCTURAL DYNAMIC to a valid number!");
 
         // provide null space information
-        if (prec == Core::LinearSolver::PreconditionerType::multigrid_muelu_contactsp)
-        { /* do nothing here */
+        if (prec == Core::LinearSolver::PreconditionerType::multigrid_muelu)
+        {
+          Core::LinearSolver::Parameters::compute_solver_parameters(
+              actdis, solver->params().sublist("Inverse1").sublist("MueLu Parameters"));
+          Core::LinearSolver::Parameters::compute_solver_parameters(
+              actdis, solver->params().sublist("Inverse2").sublist("MueLu Parameters"));
         }
         else if (prec == Core::LinearSolver::PreconditionerType::block_teko)
         {
