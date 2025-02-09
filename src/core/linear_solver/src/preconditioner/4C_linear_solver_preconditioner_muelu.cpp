@@ -109,8 +109,8 @@ void Core::LinearSolver::MueLuPreconditioner::setup(bool create, Epetra_Operator
         Teuchos::RCP<Xpetra::CrsMatrix<SC, LO, GO, NO>> xCrsA = Teuchos::make_rcp<EpetraCrsMatrix>(
             Teuchos::rcp(A->matrix(block, block).epetra_matrix()));
 
-        std::string inverse = "Inverse" + std::to_string(block + 1);
-        Teuchos::ParameterList& inverseList =
+        const std::string inverse = "Inverse" + std::to_string(block + 1);
+        const Teuchos::ParameterList& inverseList =
             muelulist_.sublist(inverse).sublist("MueLu Parameters");
         const int number_of_equations = inverseList.get<int>("PDE equations");
 
@@ -137,11 +137,12 @@ void Core::LinearSolver::MueLuPreconditioner::setup(bool create, Epetra_Operator
       {
         for (int col = 0; col < A->cols(); col++)
         {
-          Teuchos::RCP<Xpetra::CrsMatrix<SC, LO, GO, NO>> crsA = Teuchos::make_rcp<EpetraCrsMatrix>(
-              Teuchos::rcpFromRef(*A->matrix(row, col).epetra_matrix()));
+          Teuchos::RCP<Xpetra::CrsMatrix<SC, LO, GO, NO>> xCrsA =
+              Teuchos::make_rcp<EpetraCrsMatrix>(
+                  Teuchos::rcpFromRef(*A->matrix(row, col).epetra_matrix()));
           Teuchos::RCP<Xpetra::Matrix<SC, LO, GO, NO>> mat =
               Xpetra::MatrixFactory<SC, LO, GO, NO>::BuildCopy(
-                  Teuchos::make_rcp<Xpetra::CrsMatrixWrap<SC, LO, GO, NO>>(crsA));
+                  Teuchos::make_rcp<Xpetra::CrsMatrixWrap<SC, LO, GO, NO>>(xCrsA));
           bOp->setMatrix(row, col, mat);
         }
       }
@@ -169,7 +170,7 @@ void Core::LinearSolver::MueLuPreconditioner::setup(bool create, Epetra_Operator
 
       for (int block = 0; block < A->rows(); block++)
       {
-        std::string inverse = "Inverse" + std::to_string(block + 1);
+        const std::string inverse = "Inverse" + std::to_string(block + 1);
         Teuchos::ParameterList& inverse_list =
             muelulist_.sublist(inverse).sublist("MueLu Parameters");
 

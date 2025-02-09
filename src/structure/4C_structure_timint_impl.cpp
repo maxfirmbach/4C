@@ -3188,14 +3188,12 @@ void Solid::TimIntImpl::cmt_linear_solve()
               std::dynamic_pointer_cast<Core::LinAlg::BlockSparseMatrixBase>(
                   std::shared_ptr<Epetra_Operator>(raw_block_mat, [](Epetra_Operator*) {}));
           auto mat11 = block_mat_blocked_operator->matrix(1, 1);
-          std::shared_ptr<Epetra_Map> nullspace_map =
-              std::make_shared<Epetra_Map>(mat11.range_map());
-          const Epetra_Map& dofmap = *nullspace_map;
+          const Epetra_Map& dofmap = mat11.domain_map();
 
           // set the nullspace
           std::shared_ptr<Core::LinAlg::MultiVector<double>> nullspace =
               std::make_shared<Core::LinAlg::MultiVector<double>>(dofmap, dim_nullspace, true);
-          for (int ldof = 0; ldof < dofmap.NumMyElements() - 2; ++ldof)
+          for (int ldof = 0; ldof < dofmap.NumMyElements(); ++ldof)
           {
             nullspace->ReplaceMyValue(ldof, ldof % dim_nullspace, 1.0);
           }
