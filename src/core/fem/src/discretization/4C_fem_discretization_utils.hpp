@@ -441,6 +441,11 @@ namespace Core::FE
           const std::shared_ptr<Core::LinAlg::MapExtractor>& dbcmapextractor) const;
 
     };  // class Dbc
+
+    // TODO: Does this fit here?
+    Core::LinAlg::MultiVector<double> element_to_nodal_values(const Discretization& discretization,
+        const Core::LinAlg::MultiVector<double>& element_multi_vector);
+
   }  // namespace Utils
 }  // namespace Core::FE
 
