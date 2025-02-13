@@ -96,7 +96,7 @@ MUELU_XML_FILE                  contact3D_sp_simple.xml
 AZTOL                           1.0e-8
 AZCONV                          AZ_r0
 AZREUSE                         0
-AZOUTPUT                        2
+AZOUTPUT                        10
 ----------------------------------------------------------MATERIALS
 MAT 1 MAT_ElastHyper NUMMAT 1 MATIDS 10 DENS 1.0e-6
 MAT 10 ELAST_CoupNeoHooke YOUNG 1.0e-2 NUE 0.0

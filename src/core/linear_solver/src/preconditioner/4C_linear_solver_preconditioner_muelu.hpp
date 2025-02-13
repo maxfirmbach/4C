@@ -30,6 +30,13 @@ namespace Core::LinearSolver
    * MueLu User's Guide: L. Berger-Vergiat, C. A. Glusa, J. J. Hu, M. Mayr,
    * A. Prokopenko, C. M. Siefert, R. S. Tuminaro, T. A. Wiesner:
    * MueLu User's Guide, Technical Report, Sandia National Laboratories, SAND2019-0537, 2019
+   *
+   * Also works as preconditioner for blocked linear systems of equations for contact problems
+   * in saddlepoint formulation.
+   *
+   *  T. A. Wiesner, M. Mayr, A. Popp, M. W. Gee, W. A. Wall: Algebraic multigrid methods for
+   * saddle point systems arising from mortar contact formulations, International Journal for
+   * Numerical Methods in Engineering, 122(15):3749-3779, 2021, https://doi.org/10.1002/nme.6680
    */
   class MueLuPreconditioner : public PreconditionerTypeBase
   {
@@ -38,18 +45,15 @@ namespace Core::LinearSolver
 
     /*! \brief Create and compute the preconditioner
      *
-     * The MueLu preconditioner only works for matrices of the type
-     * Epetra_CrsMatrix. We check whether the input matrix is of proper type
-     * and throw an error if not!
+     * The MueLu preconditioner works for matrices of the type SparseMatrix and BlockSparseMatrix.
+     * We check whether the input matrix is of proper type and throw an error if not!
      *
      * This routine either re-creates the entire preconditioner from scratch or
      * it re-uses the existing preconditioner and only updates the fine level matrix
      * for the Krylov solver.
      *
-     * It maintains backward compatibility to the ML interface!
-     *
      * @param create Boolean flag to enforce (re-)creation of the preconditioner
-     * @param matrix Epetra_CrsMatrix to be used as input for the preconditioner
+     * @param matrix Epetra_Operator to be used as input for the preconditioner
      * @param x Solution of the linear system
      * @param b Right-hand side of the linear system
      */
