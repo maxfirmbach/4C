@@ -439,6 +439,19 @@ namespace Core::FE
           const std::shared_ptr<Core::LinAlg::MapExtractor>& dbcmapextractor) const;
 
     };  // class Dbc
+
+
+    /** \brief Average element values into node vector
+     *
+     * \param discretization        (in): discretization corresponding to the input element vector
+     * \param element_multi_vector  (in): vector holding the element based values
+     *
+     * \return node vector holding the averaged element values
+     */
+    Core::LinAlg::MultiVector<double> average_element_to_nodal_values(
+        const Discretization& discretization,
+        const Core::LinAlg::MultiVector<double>& element_multi_vector);
+
   }  // namespace Utils
 }  // namespace Core::FE
 

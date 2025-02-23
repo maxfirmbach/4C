@@ -121,4 +121,35 @@ void Core::FE::Utils::do_initial_field(const Core::Utils::FunctionManager& funct
   }
 }
 
+/*----------------------------------------------------------------------------*
+ *----------------------------------------------------------------------------*/
+Core::LinAlg::MultiVector<double> Core::FE::Utils::average_element_to_nodal_values(
+    const Discretization& discretization,
+    const Core::LinAlg::MultiVector<double>& element_multi_vector)
+{
+  Core::LinAlg::MultiVector<double> nodal_material_vector = Core::LinAlg::MultiVector<double>(
+      *discretization.node_row_map(), element_multi_vector.NumVectors(), true);
+
+  for (const auto& node : discretization.my_row_node_range())
+  {
+    auto* adjacent_elements = node->elements();
+    const int num_elements = node->num_element();
+    for (int col = 0; col < nodal_material_vector.NumVectors(); col++)
+    {
+      Core::LinAlg::Vector<double> element_vector = element_multi_vector(col);
+      double nodal_value = 0.0;
+      for (int k = 0; k < num_elements; k++)
+      {
+        const int global_element_id = adjacent_elements[k]->id();
+        const int local_element_id = element_vector.Map().LID(global_element_id);
+        nodal_value = nodal_value + element_vector[local_element_id];
+      }
+      // replace by average value
+      nodal_material_vector.ReplaceGlobalValue(node->id(), col, nodal_value / num_elements);
+    }
+  }
+
+  return nodal_material_vector;
+}
+
 FOUR_C_NAMESPACE_CLOSE
