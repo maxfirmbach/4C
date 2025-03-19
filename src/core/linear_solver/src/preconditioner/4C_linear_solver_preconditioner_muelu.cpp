@@ -83,20 +83,32 @@ void Core::LinearSolver::MueLuPreconditioner::setup(bool create, Epetra_Operator
       const int number_of_equations = inverseList.get<int>("PDE equations");
       pmatrix_->SetFixedBlockSize(number_of_equations);
 
+      muelu_params->set("number of equations", number_of_equations);
+      Teuchos::ParameterList& user_param_list = muelu_params->sublist("user data");
+
       Teuchos::RCP<const Xpetra::Map<LO, GO, NO>> row_map = mueluA->getRowMap();
       Teuchos::RCP<Xpetra::MultiVector<SC, LO, GO, NO>> nullspace =
           Core::LinearSolver::Parameters::extract_nullspace_from_parameterlist(
               *row_map, inverseList);
+
+      user_param_list.set("Nullspace", nullspace);
 
       Teuchos::RCP<Xpetra::MultiVector<SC, LO, GO, NO>> coordinates =
           Teuchos::make_rcp<EpetraMultiVector>(Teuchos::rcpFromRef(
               *inverseList.get<std::shared_ptr<Core::LinAlg::MultiVector<double>>>("Coordinates")
                   ->get_ptr_of_Epetra_MultiVector()));
 
-      muelu_params->set("number of equations", number_of_equations);
-      Teuchos::ParameterList& user_param_list = muelu_params->sublist("user data");
-      user_param_list.set("Nullspace", nullspace);
       user_param_list.set("Coordinates", coordinates);
+
+      if (muelulist_.isParameter("Material"))
+      {
+        Teuchos::RCP<Xpetra::MultiVector<SC, LO, GO, NO>> material =
+            Teuchos::make_rcp<EpetraMultiVector>(Teuchos::rcpFromRef(
+                *muelulist_.get<std::shared_ptr<Core::LinAlg::MultiVector<double>>>("Material")
+                    ->get_ptr_of_Epetra_MultiVector()));
+
+        user_param_list.set("Material", material);
+      }
 
       H_ = MueLu::CreateXpetraPreconditioner(pmatrix_, *muelu_params);
       P_ = Teuchos::make_rcp<MueLu::EpetraOperator>(H_);

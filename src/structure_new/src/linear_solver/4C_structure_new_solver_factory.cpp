@@ -19,6 +19,7 @@
 #include "4C_linear_solver_method.hpp"
 #include "4C_linear_solver_method_linalg.hpp"
 #include "4C_linear_solver_method_parameters.hpp"
+#include "4C_mat_stvenantkirchhoff.hpp"
 
 #include <Teuchos_ParameterList.hpp>
 
@@ -119,6 +120,55 @@ std::shared_ptr<Core::LinAlg::Solver> Solid::SOLVER::Factory::build_structure_li
     case Core::LinearSolver::PreconditionerType::multigrid_muelu:
     {
       actdis.compute_null_space_if_necessary(linsolver->params());
+
+      // We assume the material is not time dependent, thus can be assembled here once and for all!
+      const int columns = 1;
+      Epetra_FEVector overlapping_element_material_vector =
+          Epetra_FEVector(*actdis.element_col_map(), columns, true);
+
+      auto get_element_material_vector = [&](Core::Elements::Element& ele)
+      {
+        auto material = std::dynamic_pointer_cast<Mat::StVenantKirchhoff>(ele.material());
+        std::vector<double> youngs_modulus{material->youngs()};
+
+        FOUR_C_ASSERT(columns == youngs_modulus.size(),
+            "Number of material vectors has to be the same size as conductivity values given.");
+
+        for (size_t col = 0; col < youngs_modulus.size(); col++)
+          overlapping_element_material_vector.ReplaceGlobalValue(
+              ele.id(), col, youngs_modulus[col]);
+      };
+
+      actdis.evaluate(get_element_material_vector);
+      overlapping_element_material_vector.GlobalAssemble();
+
+      auto material_vector = std::make_shared<Core::LinAlg::MultiVector<double>>(
+          Core::LinAlg::MultiVector<double>(*actdis.node_row_map(), columns, true));
+
+      for (const auto& node : actdis.my_row_node_range())
+      {
+        auto* adjacent_elements = node->elements();
+        const int num_elements = node->num_element();
+
+        for (int col = 0; col < columns; col++)
+        {
+          Epetra_Vector* element_material = overlapping_element_material_vector(col);
+          double nodal_material = 0.0;
+
+          for (int k = 0; k < num_elements; k++)
+          {
+            const int global_element_id = adjacent_elements[k]->id();
+            const int local_element_id = element_material->Map().LID(global_element_id);
+            nodal_material = nodal_material + (*element_material)[local_element_id];
+          }
+
+          material_vector->ReplaceGlobalValue(node->id(), col, nodal_material / num_elements);
+        }
+      }
+
+      linsolver->params().set<std::shared_ptr<Core::LinAlg::MultiVector<double>>>(
+          "Material", material_vector);
+
       break;
     }
     case Core::LinearSolver::PreconditionerType::block_teko:
