@@ -10,6 +10,7 @@
 #include "4C_comm_utils.hpp"
 #include "4C_io_input_parameter_container.hpp"
 #include "4C_linalg_sparsematrix.hpp"
+#include "4C_linalg_utils_sparse_algebra_create.hpp"
 #include "4C_linalg_utils_sparse_algebra_manipulation.hpp"
 #include "4C_linalg_utils_sparse_algebra_math.hpp"
 #include "4C_linear_solver_method_parameters.hpp"
@@ -18,16 +19,24 @@
 #include <Stratimikos_DefaultLinearSolverBuilder.hpp>
 #include <Stratimikos_MueLuHelpers.hpp>
 #include <Teko_EpetraInverseOpWrapper.hpp>
+#include <Teko_GaussSeidelPreconditionerFactory.hpp>
 #include <Teko_InverseLibrary.hpp>
+#include <Teko_JacobiPreconditionerFactory.hpp>
 #include <Teko_LU2x2PreconditionerFactory.hpp>
 #include <Teko_StratimikosFactory.hpp>
 #include <Teuchos_RCPDecl.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
+#include <Thyra_EpetraOperatorWrapper.hpp>
 #include <Xpetra_MultiVectorFactory.hpp>
+#include <Xpetra_ThyraUtils.hpp>
 
 #include <filesystem>
 
+
+
 FOUR_C_NAMESPACE_OPEN
+
+std::shared_ptr<Core::LinAlg::Vector<double>> kappa;
 
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
@@ -55,8 +64,29 @@ void Core::LinearSolver::TekoPreconditioner::setup(
   auto A = std::dynamic_pointer_cast<Core::LinAlg::BlockSparseMatrixBase>(
       Core::Utils::shared_ptr_from_ref(matrix));
 
-  // Reorder/split the linear operator into the block structure desired
-  if (tekolist_.sublist("Teko Parameters").isParameter("reorder: maps"))
+  // TODO: Uncomment to get 3x3 block system
+  auto maps = tekolist_.sublist("Teko Parameters")
+                  .get<std::vector<std::shared_ptr<const Core::LinAlg::Map>>>("reorder: maps");
+  auto dof_constraint_map = std::make_shared<Core::LinAlg::Map>(A->matrix(1, 1).domain_map());
+  maps.emplace_back(dof_constraint_map);
+
+  // TODO: Due to global ID fuck up, we shoot ourselves big omega time yikes pogchamp kekw
+  const std::shared_ptr<Core::LinAlg::MultiMapExtractor> extractor(
+      new Core::LinAlg::MultiMapExtractor(A->full_domain_map(), maps));
+  auto Asparse = A->merge();
+  Asparse->complete();
+
+  A = Core::LinAlg::split_matrix<Core::LinAlg::DefaultBlockMatrixStrategy>(
+      *Asparse, *extractor, *extractor);
+  A->complete();
+
+  A = std::dynamic_pointer_cast<Core::LinAlg::BlockSparseMatrixBase>(A);
+  A->complete();
+
+
+  // TODO: Uncomment to get 2x2 system
+  /*
+  if (!A)
   {
     auto maps = tekolist_.sublist("Teko Parameters")
                     .get<std::vector<std::shared_ptr<const Core::LinAlg::Map>>>("reorder: maps");
@@ -80,6 +110,8 @@ void Core::LinearSolver::TekoPreconditioner::setup(
         *A_sparse, extractor, extractor);
     A->complete();
   }
+  */
+
 
   // wrap linear operators
   if (!A)
@@ -121,7 +153,7 @@ void Core::LinearSolver::TekoPreconditioner::setup(
 
           tekoParams.sublist("Inverse Factory Library")
               .sublist(inverse)
-              .set("number of equations", number_of_equations);
+              .set("number of equations", number_of_equations);  // number_of_equations;
           Teuchos::ParameterList& userParamList =
               tekoParams.sublist("Inverse Factory Library").sublist(inverse).sublist("user data");
           userParamList.set("Nullspace", nullspace);
@@ -139,8 +171,15 @@ void Core::LinearSolver::TekoPreconditioner::setup(
   Teko::addTekoToStratimikosBuilder(builder);
 
   // add special in-house block preconditioning methods
-  Teuchos::RCP<Teko::Cloneable> clone = Teuchos::make_rcp<Teko::AutoClone<LU2x2SpaiStrategy>>();
-  Teko::LU2x2PreconditionerFactory::addStrategy("Spai Strategy", clone);
+  Teuchos::RCP<Teko::Cloneable> lu2x2_strategy =
+      Teuchos::make_rcp<Teko::AutoClone<LU2x2SpaiStrategy>>();
+  Teko::LU2x2PreconditionerFactory::addStrategy("Spai Strategy", lu2x2_strategy);
+
+  // TODO: Here we could add something to the Jacobi one ...
+  Teuchos::RCP<Teko::Cloneable> block_diagonal_strategy =
+      Teuchos::make_rcp<Teko::AutoClone<InvFactoryDiagSpaiStrategy>>();
+  Teko::JacobiPreconditionerFactory::addStrategy("Spai Strategy", block_diagonal_strategy);
+  Teko::GaussSeidelPreconditionerFactory::addStrategy("Spai Strategy", block_diagonal_strategy);
 
   // get preconditioner parameter list
   Teuchos::RCP<Teuchos::ParameterList> stratimikos_params =
@@ -295,6 +334,219 @@ void Core::LinearSolver::LU2x2SpaiStrategy::initializeFromParameterList(
     inv_factory_s_ = inv_factory_f_;
   else
     inv_factory_s_ = invLib.getInverseFactory(invSStr);
+}
+
+
+//----------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------
+// TODO: Add block diagonal strategy?
+
+
+
+//----------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------
+Core::LinearSolver::InvFactoryDiagSpaiStrategy::InvFactoryDiagSpaiStrategy(
+    const Teuchos::RCP<Teko::InverseFactory>& factory)
+{
+  // only one factory to use!
+  invDiagFact_.resize(1, factory);
+  defaultInvFact_ = factory;
+}
+
+Core::LinearSolver::InvFactoryDiagSpaiStrategy::InvFactoryDiagSpaiStrategy(
+    const std::vector<Teuchos::RCP<Teko::InverseFactory>>& factories,
+    const Teuchos::RCP<Teko::InverseFactory>& defaultFact)
+{
+  invDiagFact_ = factories;
+
+  if (defaultFact == Teuchos::null)
+    defaultInvFact_ = invDiagFact_[0];
+  else
+    defaultInvFact_ = defaultFact;
+}
+
+Core::LinearSolver::InvFactoryDiagSpaiStrategy::InvFactoryDiagSpaiStrategy(
+    const std::vector<Teuchos::RCP<Teko::InverseFactory>>& inverseFactories,
+    const std::vector<Teuchos::RCP<Teko::InverseFactory>>& preconditionerFactories,
+    const Teuchos::RCP<Teko::InverseFactory>& defaultInverseFact,
+    const Teuchos::RCP<Teko::InverseFactory>& defaultPreconditionerFact)
+{
+  invDiagFact_ = inverseFactories;
+  precDiagFact_ = preconditionerFactories;
+
+  if (defaultInverseFact == Teuchos::null)
+    defaultInvFact_ = invDiagFact_[0];
+  else
+    defaultInvFact_ = defaultInverseFact;
+  defaultPrecFact_ = defaultPreconditionerFact;
+}
+
+void Core::LinearSolver::InvFactoryDiagSpaiStrategy::initialize(
+    const std::vector<Teuchos::RCP<Teko::InverseFactory>>& inverseFactories,
+    const std::vector<Teuchos::RCP<Teko::InverseFactory>>& preconditionerFactories,
+    const Teuchos::RCP<Teko::InverseFactory>& defaultInverseFact,
+    const Teuchos::RCP<Teko::InverseFactory>& defaultPreconditionerFact)
+{
+  invDiagFact_ = inverseFactories;
+  precDiagFact_ = preconditionerFactories;
+
+  if (defaultInverseFact == Teuchos::null)
+    defaultInvFact_ = invDiagFact_[0];
+  else
+    defaultInvFact_ = defaultInverseFact;
+  defaultPrecFact_ = defaultPreconditionerFact;
+}
+
+/** returns an (approximate) inverse of the diagonal blocks of A
+ * where A is closely related to the original source for invD0 and invD1
+ * with the zero block being approximated by the respective Schur complement
+ */
+void Core::LinearSolver::InvFactoryDiagSpaiStrategy::getInvD(const Teko::BlockedLinearOp& A,
+    Teko::BlockPreconditionerState& state, std::vector<Teko::LinearOp>& invDiag) const
+{
+  Teko_DEBUG_SCOPE("InvFactoryDiagSchurStrategy::getInvD", 10);
+
+  // loop over diagonals, build an inverse operator for each
+  size_t diagCnt = A->productRange()->numBlocks();
+
+  const std::string opPrefix = "BlockDiagOp";
+  for (size_t i = 0; i < diagCnt; i++)
+  {
+    auto precFact = ((i < precDiagFact_.size()) && (!precDiagFact_[i].is_null()))
+                        ? precDiagFact_[i]
+                        : defaultPrecFact_;
+    auto invFact = (i < invDiagFact_.size()) ? invDiagFact_[i] : defaultInvFact_;
+
+    // TODO: for 3x3 block system only!!!
+    if (i == 2)
+    {
+      // 1. get the Schur complement contribution from the augmentation \epsilon\inv{W}
+      /*
+      auto A22 = Teko::getBlock(2, 2, A);
+      auto A22_op = Teuchos::rcp_dynamic_cast<const Thyra::EpetraLinearOp>(A22);
+      auto A22_crs = Teuchos::rcp_dynamic_cast<const Epetra_CrsMatrix>(A22_op->epetra_op(), true);
+
+      auto scaling_matrix = std::make_shared<Core::LinAlg::SparseMatrix>(*kappa);
+      scaling_matrix->complete();
+
+      Teko::LinearOp schur_penalty = Thyra::epetraLinearOp(
+          Teuchos::make_rcp<Epetra_CrsMatrix>(scaling_matrix->epetra_matrix()));
+
+      auto schur_scaled_1 = Teko::explicitScale(-1.0, schur_penalty);
+      */
+
+      // 2. get the Schur complement contribution from the solid part (without augmentation?)
+      auto A20 = Teko::getBlock(2, 0, A);
+      auto A00 = Teko::getBlock(0, 0, A);
+      auto A02 = Teko::getBlock(0, 2, A);
+
+      auto diagonalType00 = Teko::getDiagonalType("Diagonal");
+      auto invA00 = getInvDiagonalOp(A00, diagonalType00);
+
+      auto triple00 = Teko::explicitMultiply(A20, Teko::explicitMultiply(invA00, A02));
+
+
+      // 3. get the Schur complement contributino from the beam part (without augmentation?)
+      auto A21 = Teko::getBlock(2, 1, A);
+      auto A11 = Teko::getBlock(1, 1, A);
+      auto A12 = Teko::getBlock(1, 2, A);
+
+      // sparse inverse calculation
+      double drop_tol = 1e-12;
+      int fill_level = 2;
+
+      auto A_op = Teuchos::rcp_dynamic_cast<const Thyra::EpetraLinearOp>(A11);
+      auto A_crs = Teuchos::rcp_dynamic_cast<const Epetra_CrsMatrix>(A_op->epetra_op(), true);
+
+      const Core::LinAlg::SparseMatrix A_sparse(
+          Core::Utils::shared_ptr_from_ref(*Teuchos::rcp_const_cast<Epetra_CrsMatrix>(A_crs)),
+          Core::LinAlg::DataAccess::Copy);
+
+      std::shared_ptr<Core::LinAlg::SparseMatrix> A_thresh =
+          Core::LinAlg::threshold_matrix(A_sparse, drop_tol);
+      std::shared_ptr<Core::LinAlg::Graph> sparsity_pattern_enriched =
+          Core::LinAlg::enrich_matrix_graph(*A_thresh, fill_level);
+      std::shared_ptr<Core::LinAlg::SparseMatrix> A_inverse =
+          Core::LinAlg::matrix_sparse_inverse(A_sparse, sparsity_pattern_enriched);
+      A_thresh = Core::LinAlg::threshold_matrix(*A_inverse, drop_tol);
+
+      auto invA11 =
+          Thyra::epetraLinearOp(Teuchos::make_rcp<Epetra_CrsMatrix>(A_thresh->epetra_matrix()));
+
+      auto triple11 = Teko::explicitMultiply(A21, Teko::explicitMultiply(invA11, A12));
+      auto schur = Teko::explicitAdd(triple00, triple11);
+      auto schur_scaled_2 = Teko::explicitScale(-1.0, schur);
+
+      // 4. Get Schur complement
+      // auto inverse_1 = schur_scaled_1;
+      auto inverse_2 = buildInverse(*invFact, precFact, schur_scaled_2, state, opPrefix, i);
+
+      // auto inverse_operator = Teko::add(inverse_1, inverse_2);
+
+      // TODO: Check which inverse is used in here!
+      invDiag.push_back(inverse_2);
+    }
+    // TODO: For 2x2 system only!
+    /*
+    if (i == 1)
+    {
+      auto scaling_matrix = std::make_shared<Core::LinAlg::SparseMatrix>(*kappa);
+      scaling_matrix->complete();
+
+      auto schur_penalty = Thyra::epetraLinearOp(
+          Teuchos::make_rcp<Epetra_CrsMatrix>(scaling_matrix->epetra_matrix()));
+
+      auto schur_scaled = Teko::explicitScale(-1.0, schur_penalty);
+
+      invDiag.push_back(buildInverse(*invFact, precFact, schur_scaled, state, opPrefix, i));
+    }
+    */
+    else
+    {
+      auto block = Teko::getBlock(i, i, A);
+      invDiag.push_back(buildInverse(*invFact, precFact, block, state, opPrefix, i));
+    }
+  }
+}
+
+Teko::LinearOp Core::LinearSolver::InvFactoryDiagSpaiStrategy::buildInverse(
+    const Teko::InverseFactory& invFact, Teuchos::RCP<Teko::InverseFactory>& precFact,
+    const Teko::LinearOp& matrix, Teko::BlockPreconditionerState& state,
+    const std::string& opPrefix, int i) const
+{
+  std::stringstream ss;
+  ss << opPrefix << "_" << i;
+
+  Teko::ModifiableLinearOp& invOp = state.getModifiableOp(ss.str());
+  Teko::ModifiableLinearOp& precOp = state.getModifiableOp("prec_" + ss.str());
+
+  if (precFact != Teuchos::null)
+  {
+    if (precOp == Teuchos::null)
+    {
+      precOp = precFact->buildInverse(matrix);
+      state.addModifiableOp("prec_" + ss.str(), precOp);
+    }
+    else
+    {
+      Teko::rebuildInverse(*precFact, matrix, precOp);
+    }
+  }
+
+  if (invOp == Teuchos::null)
+    if (precOp.is_null())
+      invOp = Teko::buildInverse(invFact, matrix);
+    else
+      invOp = Teko::buildInverse(invFact, matrix, precOp);
+  else
+  {
+    if (precOp.is_null())
+      Teko::rebuildInverse(invFact, matrix, invOp);
+    else
+      Teko::rebuildInverse(invFact, matrix, precOp, invOp);
+  }
+
+  return invOp;
 }
 
 FOUR_C_NAMESPACE_CLOSE

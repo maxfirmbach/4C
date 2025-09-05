@@ -22,8 +22,9 @@
 #include "4C_structure_new_timint_basedataglobalstate.hpp"
 #include "4C_utils_exceptions.hpp"
 
-FOUR_C_NAMESPACE_OPEN
 
+
+FOUR_C_NAMESPACE_OPEN
 
 /**
  *
@@ -549,6 +550,9 @@ void BeamInteraction::BeamToSolidMortarManager::evaluate_and_assemble_global_cou
   kappa_->complete();
   lambda_active_->complete();
   constraint_->complete();
+
+  // TODO: Remove this output statement at some point
+  kappa = penalty_invert_kappa();
 }
 
 /**
