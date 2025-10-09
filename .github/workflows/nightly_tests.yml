@@ -1,8 +1,15 @@
 name: nightly_tests
 
 on:
-  schedule:
-    - cron: '0 22 * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
 
 jobs:
   gcc13_assertions_build:
