@@ -149,6 +149,7 @@ void Core::LinearSolver::TekoPreconditioner::setup(
     Teuchos::RCP<Teko::Cloneable> clone = Teuchos::make_rcp<Teko::AutoClone<LU2x2SpaiStrategy>>();
     Teko::LU2x2PreconditionerFactory::addStrategy("Spai Strategy", clone);
 
+<<<<<<< HEAD
     auto arrowhead_clone = Teuchos::make_rcp<Teko::AutoClone<ModifiedALPreconditionerFactory>>();
 
     if (tekolist_.sublist("Teko Parameters").isParameter("scaling vector"))
@@ -183,9 +184,9 @@ void Core::LinearSolver::TekoPreconditioner::setup(
         builder.createPreconditioningStrategy("Teko");
     Teuchos::RCP<Thyra::PreconditionerBase<double>> prec =
         Thyra::prec<double>(*precFactory, pmatrix_);
-    Teko::LinearOp inverseOp = prec->getUnspecifiedPrecOp();
+    p_thyra_ = prec->getUnspecifiedPrecOp();
 
-    p_ = Utils::get_epetra_inverse_operator_from_thyra(inverseOp);
+    p_ = Utils::get_epetra_inverse_operator_from_thyra(p_thyra_);
   }
 }
 
