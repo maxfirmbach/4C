@@ -113,7 +113,7 @@ int Core::LinearSolver::IterativeSolver::solve(Core::LinAlg::MultiVector<double>
 
   if (preconditioner_ != nullptr)
   {
-    auto belosPrec = preconditioner_->thyra_operator();
+    auto belosPrec = preconditioner_->prec_operator();
     problem->setRightPrec(belosPrec);
   }
 
