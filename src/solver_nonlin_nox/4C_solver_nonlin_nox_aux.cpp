@@ -57,7 +57,7 @@ void NOX::Nln::Aux::set_printing_parameters(Teuchos::ParameterList& p_nox, MPI_C
 NOX::Nln::LinSystem::OperatorType NOX::Nln::Aux::get_operator_type(
     const Core::LinAlg::SparseOperator& op)
 {
-  const Epetra_Operator* testOperator = nullptr;
+  const Core::LinAlg::SparseOperator* testOperator = nullptr;
 
   // Is it a LINALG_BlockSparseMatrix
   testOperator = dynamic_cast<
