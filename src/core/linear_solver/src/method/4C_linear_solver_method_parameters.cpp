@@ -106,6 +106,58 @@ void Core::LinearSolver::Parameters::compute_solver_parameters(
 
     solverlist.set<std::shared_ptr<Core::LinAlg::MultiVector<double>>>("nullspace", nullspace);
   }
+
+  // set body index information
+  {
+    auto body_indices = std::make_shared<Core::LinAlg::Vector<int>>(*nullspace_dof_map);
+
+    int bodyID = 0;
+    int element_num = 0;
+    for (const auto& element : dis.my_row_element_range())
+    {
+      int nmdof;
+      int dimns;
+      element.user_element()->element_type().nodal_block_information(
+          const_cast<Elements::Element*>(element.user_element()), nmdof, dimns);
+
+
+      auto nodes = element.nodes();
+
+      // TODO: Here we need to get the body index from the node.
+      // if available = specific number
+      // if not available = 0
+      // We could for now just use the global ID as we have one element per beam.
+      const int body_index = bodyID;  // element.user_element()->lid()-27000; // bodyID
+
+      for (const auto& node : nodes)
+      {
+        const int localIndex = nullspace_node_map->lid(node.global_id());
+        if (localIndex == -1)
+        {
+          continue;
+        }
+
+        auto dofs = dis.dof(node.user_node());
+
+        for (const int dof : dofs)
+        {
+          body_indices->get_local_values()[nullspace_dof_map->lid(dof)] = body_index;
+        }
+      }
+
+      if (nmdof == 6)  // && dimns == 5)
+      {
+        element_num++;
+        if (element_num == 1)
+        {
+          bodyID++;
+          element_num = 0;
+        }
+      }
+    }
+
+    solverlist.set<std::shared_ptr<Core::LinAlg::Vector<int>>>("bodyid", body_indices);
+  }
 }
 
 //----------------------------------------------------------------------------------

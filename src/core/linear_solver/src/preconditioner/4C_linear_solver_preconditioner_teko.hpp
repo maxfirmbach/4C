@@ -43,7 +43,7 @@ namespace Core::LinearSolver
     Teuchos::ParameterList& tekolist_;
 
     //! system of equations used for preconditioning used by P_ only
-    Teuchos::RCP<const Thyra::LinearOpBase<double>> pmatrix_;
+    Teuchos::RCP<Thyra::LinearOpBase<double>> pmatrix_;
 
     //! preconditioner
     std::shared_ptr<Epetra_Operator> p_;

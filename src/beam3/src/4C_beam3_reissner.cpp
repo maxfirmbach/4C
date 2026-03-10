@@ -71,20 +71,20 @@ std::shared_ptr<Core::Elements::Element> Discret::Elements::Beam3rType::create(
 void Discret::Elements::Beam3rType::nodal_block_information(
     Core::Elements::Element* dwele, int& numdf, int& dimns)
 {
-  Discret::Elements::Beam3r* currele = dynamic_cast<Discret::Elements::Beam3r*>(dwele);
-  if (!currele) FOUR_C_THROW("cast to Beam3r* failed");
+  // Discret::Elements::Beam3r* currele = dynamic_cast<Discret::Elements::Beam3r*>(dwele);
+  // if (!currele) FOUR_C_THROW("cast to Beam3r* failed");
 
-  if (!currele->hermite_centerline_interpolation() or currele->num_node() > 3)
-  {
-    FOUR_C_THROW(
-        "method nodal_block_information not implemented for element type beam3r in case of higher "
-        "order Lagrange interpolation!");
-  }
-  else
-  {
-    numdf = 6;
-    dimns = 6;
-  }
+  // if (!currele->hermite_centerline_interpolation() or currele->num_node() > 3)
+  //{
+  //  FOUR_C_THROW(
+  //       "method nodal_block_information not implemented for element type beam3r in case of higher
+  //       " "order Lagrange interpolation!");
+  // }
+  // else
+  //{
+  numdf = 6;
+  dimns = 6;
+  //}
 }
 
 /*------------------------------------------------------------------------------------------------*

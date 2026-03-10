@@ -10,6 +10,7 @@
 #include "4C_comm_utils.hpp"
 #include "4C_io_input_parameter_container.hpp"
 #include "4C_linalg_sparsematrix.hpp"
+#include "4C_linalg_utils_sparse_algebra_assemble.hpp"
 #include "4C_linalg_utils_sparse_algebra_create.hpp"
 #include "4C_linalg_utils_sparse_algebra_manipulation.hpp"
 #include "4C_linalg_utils_sparse_algebra_math.hpp"
@@ -31,8 +32,6 @@
 #include <Xpetra_ThyraUtils.hpp>
 
 #include <filesystem>
-
-
 
 FOUR_C_NAMESPACE_OPEN
 
@@ -117,11 +116,13 @@ void Core::LinearSolver::TekoPreconditioner::setup(
   if (!A)
   {
     auto A_crs = Teuchos::rcp_dynamic_cast<Core::LinAlg::SparseMatrix>(Teuchos::rcpFromRef(matrix));
-    pmatrix_ = Utils::create_thyra_linear_op(*A_crs, LinAlg::DataAccess::Copy);
+    pmatrix_ = Teuchos::rcp_const_cast<Thyra::LinearOpBase<double>>(
+        Utils::create_thyra_linear_op(*A_crs, LinAlg::DataAccess::Copy));
   }
   else
   {
-    pmatrix_ = Utils::create_thyra_linear_op(*A, LinAlg::DataAccess::Copy);
+    pmatrix_ = Teuchos::rcp_const_cast<Thyra::LinearOpBase<double>>(
+        Utils::create_thyra_linear_op(*A, LinAlg::DataAccess::Copy));
 
     // check if multigrid is used as preconditioner for single field inverse approximation and
     // attach nullspace and coordinate information to the respective inverse parameter list.
@@ -139,21 +140,78 @@ void Core::LinearSolver::TekoPreconditioner::setup(
                 .sublist(inverse)
                 .get<std::string>("Type") == "MueLu")
         {
-          const int number_of_equations = inverseList.get<int>("PDE equations");
+          // const int number_of_equations = inverseList.get<int>("PDE equations");
 
-          Teuchos::RCP<XpetraMultiVector> nullspace =
-              Teuchos::make_rcp<EpetraMultiVector>(Teuchos::rcpFromRef(
-                  inverseList.get<std::shared_ptr<Core::LinAlg::MultiVector<double>>>("nullspace")
-                      ->get_epetra_multi_vector()));
+          auto nullspace_vector =
+              inverseList.get<std::shared_ptr<Core::LinAlg::MultiVector<double>>>("nullspace");
+
+          // Check for boundary conditions
+          const bool has_dirichlet =
+              Core::LinAlg::has_dirichlet_boundary_condition(A->matrix(block, block));
+
+          // If we have no Dirichlet rows, we need to do rank 1 correction, we have a pure Neumann
+          // problem!
+          if (!has_dirichlet)
+          {
+            if (Communication::my_mpi_rank(A->get_comm()) == 0)
+              std::cout << "We have a Neumann problem at hand (maybe). If you want to factorize "
+                           "this matrix either do a rank correction or go home. :)"
+                        << std::endl;
+
+            auto body_indices =
+                inverseList.get<std::shared_ptr<Core::LinAlg::Vector<int>>>("bodyid");
+
+            Core::LinAlg::MultiVector<double> blocked_nullspace(A->matrix(block, block).row_map(),
+                nullspace_vector->num_vectors() * (body_indices->max_value() + 1), true);
+
+            // Partition nullspace over individual fibers
+            for (int row = 0; row < A->matrix(block, block).num_my_rows(); row++)
+            {
+              // Check to which bodyID this row belongs, this will determine the block column in
+              // blocked_nullspace
+              const int bodyID = body_indices->get_local_values()[row];
+              const int block_col = bodyID * nullspace_vector->num_vectors();
+
+              std::vector<int> indices;
+              std::vector<double> values;
+
+              for (int nsdim = 0; nsdim < nullspace_vector->num_vectors(); nsdim++)
+              {
+                const double value =
+                    nullspace_vector->get_vector(nsdim).local_values_as_span()[row];
+
+                values.push_back(value);
+                indices.push_back(block_col + nsdim);
+              }
+
+              for (size_t index = 0; index < indices.size(); index++)
+                blocked_nullspace.get_vector(indices[index]).local_values_as_span()[row] =
+                    values[index];
+            }
+
+            // TODO: For now we skip orthonormalization
+            auto projected_A = Core::LinAlg::matrix_rank_correction(A->matrix(block, block),
+                blocked_nullspace, {.alpha = 1e-6, .orthonormalize = true});
+
+            // Put the matrix into the thyra operator
+            Teuchos::rcp_dynamic_cast<Thyra::PhysicallyBlockedLinearOpBase<double>>(pmatrix_)
+                ->setBlock(block, block,
+                    Utils::create_thyra_linear_op(*projected_A, LinAlg::DataAccess::Copy));
+          }
+
+          Teuchos::RCP<XpetraMultiVector> nullspace = Teuchos::make_rcp<EpetraMultiVector>(
+              Teuchos::rcpFromRef(nullspace_vector->get_epetra_multi_vector()));
 
           Teuchos::RCP<XpetraMultiVector> coordinates =
               Teuchos::make_rcp<EpetraMultiVector>(Teuchos::rcpFromRef(inverseList
                       .get<std::shared_ptr<Core::LinAlg::MultiVector<double>>>("Coordinates")
                       ->get_epetra_multi_vector()));
 
+          /*
           tekoParams.sublist("Inverse Factory Library")
               .sublist(inverse)
               .set("number of equations", number_of_equations);  // number_of_equations;
+          */
           Teuchos::ParameterList& userParamList =
               tekoParams.sublist("Inverse Factory Library").sublist(inverse).sublist("user data");
           userParamList.set("Nullspace", nullspace);
@@ -453,7 +511,7 @@ void Core::LinearSolver::InvFactoryDiagSpaiStrategy::getInvD(const Teko::Blocked
 
       // sparse inverse calculation
       double drop_tol = 1e-12;
-      int fill_level = 2;
+      int fill_level = 64;
 
       auto A_op = Teuchos::rcp_dynamic_cast<const Thyra::EpetraLinearOp>(A11);
       auto A_crs = Teuchos::rcp_dynamic_cast<const Epetra_CrsMatrix>(A_op->epetra_op(), true);
@@ -477,9 +535,13 @@ void Core::LinearSolver::InvFactoryDiagSpaiStrategy::getInvD(const Teko::Blocked
       auto schur = Teko::explicitAdd(triple00, triple11);
       auto schur_scaled_2 = Teko::explicitScale(-1.0, schur);
 
+      // TODO: Get A(2,2) if possible
+      auto A22 = Teko::getBlock(2, 2, A);
+      auto complete_schur = Teko::explicitAdd(A22, schur_scaled_2);
+
       // 4. Get Schur complement
       // auto inverse_1 = schur_scaled_1;
-      auto inverse_2 = buildInverse(*invFact, precFact, schur_scaled_2, state, opPrefix, i);
+      auto inverse_2 = buildInverse(*invFact, precFact, complete_schur, state, opPrefix, i);
 
       // auto inverse_operator = Teko::add(inverse_1, inverse_2);
 
