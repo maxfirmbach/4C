@@ -13,7 +13,7 @@
 #include "4C_beaminteraction_str_model_evaluator_datastate.hpp"
 #include "4C_comm_mpi_utils.hpp"
 #include "4C_fem_discretization.hpp"
-#include "4C_fem_general_element.hpp"
+#include "4C_linalg_vector.hpp"
 
 FOUR_C_NAMESPACE_OPEN
 
@@ -25,7 +25,8 @@ void BeamInteraction::SubmodelEvaluator::BeamContactAssemblyManagerInDirect::eva
     std::shared_ptr<Core::FE::Discretization> discret,
     const std::shared_ptr<const Solid::ModelEvaluator::BeamInteractionDataState>& data_state,
     std::shared_ptr<Core::LinAlg::FEVector<double>> fe_sysvec,
-    std::shared_ptr<Core::LinAlg::SparseMatrix> fe_sysmat)
+    std::shared_ptr<Core::LinAlg::SparseMatrix> fe_sysmat,
+    const BeamInteraction::BeamToSolidVolumeMeshtyingParams& beam_to_solid_volume_meshtying_params)
 {
   if (mortar_manager_->have_lagrange_dofs())
   {
@@ -34,8 +35,68 @@ void BeamInteraction::SubmodelEvaluator::BeamContactAssemblyManagerInDirect::eva
     if (mortar_manager_->get_lagrange_formulation() ==
         BeamToSolid::BeamToSolidLagrangeFormulation::augmented)
     {
+      const auto* dof_row_map = discret->dof_row_map();
+      const auto* solid_map = &mortar_manager_->get_solid_dof_row_map();
+      const auto* beam_map = &mortar_manager_->get_beam_dof_row_map();
+
+      // Create matrix and vector for the penalty regularization contributions.
+      std::shared_ptr<Core::LinAlg::SparseMatrix> sysmat_penalty = nullptr;
+      if (fe_sysmat != nullptr)
+      {
+        sysmat_penalty = std::make_shared<Core::LinAlg::SparseMatrix>(
+            *dof_row_map, 81);  // TODO: Better way than doing it this way with setting the 81?
+      }
+      std::shared_ptr<Core::LinAlg::FEVector<double>> sysvec_penalty = nullptr;
+      if (fe_sysvec != nullptr)
+      {
+        sysvec_penalty = std::make_shared<Core::LinAlg::FEVector<double>>(*dof_row_map);
+      }
+
+      // Evaluate the penalty coupling contributions.
       mortar_manager_->evaluate_force_stiff_penalty_regularization(
-          data_state, fe_sysmat, fe_sysvec);
+          data_state, sysmat_penalty, sysvec_penalty);
+      if (sysmat_penalty != nullptr) sysmat_penalty->complete();
+      if (sysvec_penalty != nullptr) sysvec_penalty->complete();
+
+      // Create the scaling vector holding the diagonal entries for the augmentation scaling
+      // matrix.
+      Core::LinAlg::Vector<double> augmentation_scaling_vector(*dof_row_map);
+      augmentation_scaling_vector.put_scalar(1.0);
+
+      auto add_scaling_values_to_vector = [&](const Core::LinAlg::Map& sub_map, double val)
+      {
+        for (int i = 0; i < sub_map.num_my_elements(); ++i)
+        {
+          int gid = sub_map.gid(i);
+          int lid_dof_row_map = dof_row_map->lid(gid);
+          if (lid_dof_row_map != -1)
+          {
+            augmentation_scaling_vector.replace_local_value(lid_dof_row_map, val);
+          }
+          else
+          {
+            FOUR_C_THROW(
+                "Global ID {} from sub map is not found in dof row map. This is should not happen.",
+                gid);
+          }
+        }
+      };
+
+      add_scaling_values_to_vector(*solid_map,
+          beam_to_solid_volume_meshtying_params.get_augmentation_scaling_parameter_solid());
+      add_scaling_values_to_vector(*beam_map,
+          beam_to_solid_volume_meshtying_params.get_augmentation_scaling_parameter_beam());
+
+      // Scale the penalty contributions and add them to the system matrix and vector.
+      if (fe_sysmat != nullptr)
+      {
+        sysmat_penalty->left_scale(augmentation_scaling_vector);
+        fe_sysmat->add(*sysmat_penalty, false, 1.0, 1.0);
+      }
+      if (fe_sysvec != nullptr)
+      {
+        fe_sysvec->multiply(1.0, augmentation_scaling_vector, *sysvec_penalty, 1.0);
+      }
     }
   }
   else

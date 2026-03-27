@@ -364,7 +364,8 @@ bool BeamInteraction::SubmodelEvaluator::BeamContact::evaluate_force()
   for (auto& assembly_manager : assembly_managers_)
   {
     assembly_manager->evaluate_force_stiff(discret_ptr(), beam_interaction_data_state_ptr(),
-        beam_interaction_data_state_ptr()->get_force_np(), nullptr);
+        beam_interaction_data_state_ptr()->get_force_np(), nullptr,
+        *beam_contact_params_ptr_->beam_to_solid_volume_meshtying_params());
   }
 
   return true;
@@ -382,7 +383,8 @@ bool BeamInteraction::SubmodelEvaluator::BeamContact::evaluate_stiff()
   for (auto& assembly_manager : assembly_managers_)
   {
     assembly_manager->evaluate_force_stiff(discret_ptr(), beam_interaction_data_state_ptr(),
-        nullptr, beam_interaction_data_state_ptr()->get_stiff());
+        nullptr, beam_interaction_data_state_ptr()->get_stiff(),
+        *beam_contact_params_ptr_->beam_to_solid_volume_meshtying_params());
   }
 
   return true;
@@ -401,7 +403,8 @@ bool BeamInteraction::SubmodelEvaluator::BeamContact::evaluate_force_stiff()
   for (auto& assembly_manager : assembly_managers_)
     assembly_manager->evaluate_force_stiff(discret_ptr(), beam_interaction_data_state_ptr(),
         beam_interaction_data_state_ptr()->get_force_np(),
-        beam_interaction_data_state_ptr()->get_stiff());
+        beam_interaction_data_state_ptr()->get_stiff(),
+        *beam_contact_params_ptr_->beam_to_solid_volume_meshtying_params());
 
   print_active_beam_contact_set(Core::IO::cout.os(Core::IO::debug));
 

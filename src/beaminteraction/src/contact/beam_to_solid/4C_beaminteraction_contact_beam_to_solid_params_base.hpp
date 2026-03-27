@@ -118,6 +118,22 @@ namespace BeamInteraction
     inline double get_penalty_parameter() const { return penalty_parameter_; }
 
     /**
+     * \brief Returns the augmentation scaling parameter for the beam DOFs.
+     */
+    [[nodiscard]] inline double get_augmentation_scaling_parameter_beam() const
+    {
+      return augmentation_scaling_parameter_beam_;
+    }
+
+    /**
+     * \brief Returns the augmentation scaling parameter for the solid DOFs.
+     */
+    [[nodiscard]] inline double get_augmentation_scaling_parameter_solid() const
+    {
+      return augmentation_scaling_parameter_solid_;
+    }
+
+    /**
      * \brief Returns the Gauss rule.
      * @return gauss rule.
      */
@@ -156,6 +172,10 @@ namespace BeamInteraction
 
     //! Penalty parameter.
     double penalty_parameter_;
+
+    //! Augmentation scaling parameters
+    double augmentation_scaling_parameter_beam_;
+    double augmentation_scaling_parameter_solid_;
 
     //! Gauss rule to be used.
     Core::FE::GaussRule1D gauss_rule_;

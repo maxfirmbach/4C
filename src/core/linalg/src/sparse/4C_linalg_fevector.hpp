@@ -201,7 +201,10 @@ namespace Core::LinAlg
 
     //! Multiply a Core::LinAlg::MultiVector<double> with another, element-by-element.
     void multiply(double ScalarAB, const Epetra_MultiVector& A, const Epetra_MultiVector& B,
-        double ScalarThis);
+        double ScalarThis)
+    {
+      ASSERT_EPETRA_CALL(vector_->Multiply(ScalarAB, A, B, ScalarThis));
+    }
 
     //! Imports an Epetra_DistObject using the Core::LinAlg::Import object.
     void import(const Epetra_SrcDistObject& A, const Core::LinAlg::Import& Importer,

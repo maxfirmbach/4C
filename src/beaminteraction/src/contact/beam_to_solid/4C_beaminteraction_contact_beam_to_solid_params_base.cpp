@@ -25,6 +25,8 @@ BeamInteraction::BeamToSolidParamsBase::BeamToSolidParamsBase()
       contact_discretization_(BeamToSolid::BeamToSolidContactDiscretization::none),
       mortar_shape_function_(BeamToSolid::BeamToSolidMortarShapefunctions::none),
       penalty_parameter_(-1.0),
+      augmentation_scaling_parameter_beam_(-1.0),
+      augmentation_scaling_parameter_solid_(-1.0),
       gauss_rule_(Core::FE::GaussRule1D::undefined),
       rotational_coupling_(false),
       lagrange_formulation_(BeamToSolid::BeamToSolidLagrangeFormulation::none)
@@ -68,6 +70,12 @@ void BeamInteraction::BeamToSolidParamsBase::set_base_params(
     penalty_parameter_ = beam_to_solid_params_list.get<double>("PENALTY_PARAMETER");
     if (penalty_parameter_ < 0.0)
       FOUR_C_THROW("beam-to-volume-meshtying penalty parameter must not be negative!");
+
+    // Augmentation scaling parameters.
+    augmentation_scaling_parameter_beam_ =
+        beam_to_solid_params_list.get<double>("AUGMENTATION_SCALING_PARAMETER_BEAM");
+    augmentation_scaling_parameter_solid_ =
+        beam_to_solid_params_list.get<double>("AUGMENTATION_SCALING_PARAMETER_SOLID");
 
     // Gauss rule for integration along the beam (segments).
     gauss_rule_ =

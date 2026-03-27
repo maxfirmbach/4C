@@ -266,6 +266,22 @@ namespace BeamInteraction
     }
 
     /**
+     * \brief Returns a const reference to the beam dof row map
+     */
+    [[nodiscard]] const Core::LinAlg::Map& get_beam_dof_row_map() const
+    {
+      return *beam_dof_rowmap_;
+    }
+
+    /**
+     * \brief Returns  a const reference to the solid dof row map
+     */
+    [[nodiscard]] const Core::LinAlg::Map& get_solid_dof_row_map() const
+    {
+      return *solid_dof_rowmap_;
+    }
+
+    /**
      * \brief Calculate the internal mortar penalty energy.
      * @return Global mortar energy.
      */
