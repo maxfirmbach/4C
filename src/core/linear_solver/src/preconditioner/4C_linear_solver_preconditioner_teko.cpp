@@ -36,6 +36,7 @@
 FOUR_C_NAMESPACE_OPEN
 
 std::shared_ptr<Core::LinAlg::Vector<double>> kappa;
+double relevant_penalty_param;
 
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
@@ -140,11 +141,12 @@ void Core::LinearSolver::TekoPreconditioner::setup(
                 .sublist(inverse)
                 .get<std::string>("Type") == "MueLu")
         {
-          // const int number_of_equations = inverseList.get<int>("PDE equations");
+          const int number_of_equations = inverseList.get<int>("PDE equations");
 
           auto nullspace_vector =
               inverseList.get<std::shared_ptr<Core::LinAlg::MultiVector<double>>>("nullspace");
 
+          /*
           // Check for boundary conditions
           const bool has_dirichlet =
               Core::LinAlg::has_dirichlet_boundary_condition(A->matrix(block, block));
@@ -198,6 +200,7 @@ void Core::LinearSolver::TekoPreconditioner::setup(
                 ->setBlock(block, block,
                     Utils::create_thyra_linear_op(*projected_A, LinAlg::DataAccess::Copy));
           }
+          */
 
           Teuchos::RCP<XpetraMultiVector> nullspace = Teuchos::make_rcp<EpetraMultiVector>(
               Teuchos::rcpFromRef(nullspace_vector->get_epetra_multi_vector()));
@@ -207,11 +210,10 @@ void Core::LinearSolver::TekoPreconditioner::setup(
                       .get<std::shared_ptr<Core::LinAlg::MultiVector<double>>>("Coordinates")
                       ->get_epetra_multi_vector()));
 
-          /*
           tekoParams.sublist("Inverse Factory Library")
               .sublist(inverse)
-              .set("number of equations", number_of_equations);  // number_of_equations;
-          */
+              .set("number of equations", number_of_equations);
+
           Teuchos::ParameterList& userParamList =
               tekoParams.sublist("Inverse Factory Library").sublist(inverse).sublist("user data");
           userParamList.set("Nullspace", nullspace);
@@ -479,7 +481,6 @@ void Core::LinearSolver::InvFactoryDiagSpaiStrategy::getInvD(const Teko::Blocked
     if (i == 2)
     {
       // 1. get the Schur complement contribution from the augmentation \epsilon\inv{W}
-      /*
       auto A22 = Teko::getBlock(2, 2, A);
       auto A22_op = Teuchos::rcp_dynamic_cast<const Thyra::EpetraLinearOp>(A22);
       auto A22_crs = Teuchos::rcp_dynamic_cast<const Epetra_CrsMatrix>(A22_op->epetra_op(), true);
@@ -490,9 +491,13 @@ void Core::LinearSolver::InvFactoryDiagSpaiStrategy::getInvD(const Teko::Blocked
       Teko::LinearOp schur_penalty = Thyra::epetraLinearOp(
           Teuchos::make_rcp<Epetra_CrsMatrix>(scaling_matrix->epetra_matrix()));
 
-      auto schur_scaled_1 = Teko::explicitScale(-1.0, schur_penalty);
-      */
 
+      std::cout << "Relevant penalty parameter is: " << relevant_penalty_param << std::endl;
+
+      auto schur_penalty_scaled = Teko::explicitScale(relevant_penalty_param, schur_penalty);
+      auto schur_scaled_1 = Teko::explicitScale(-1.0, schur_penalty_scaled);
+
+      /*
       // 2. get the Schur complement contribution from the solid part (without augmentation?)
       auto A20 = Teko::getBlock(2, 0, A);
       auto A00 = Teko::getBlock(0, 0, A);
@@ -538,31 +543,17 @@ void Core::LinearSolver::InvFactoryDiagSpaiStrategy::getInvD(const Teko::Blocked
       // TODO: Get A(2,2) if possible
       auto A22 = Teko::getBlock(2, 2, A);
       auto complete_schur = Teko::explicitAdd(A22, schur_scaled_2);
+      */
 
       // 4. Get Schur complement
-      // auto inverse_1 = schur_scaled_1;
-      auto inverse_2 = buildInverse(*invFact, precFact, complete_schur, state, opPrefix, i);
+      auto inverse_1 = schur_scaled_1;
+      // auto inverse_2 = buildInverse(*invFact, precFact, complete_schur, state, opPrefix, i);
 
       // auto inverse_operator = Teko::add(inverse_1, inverse_2);
 
       // TODO: Check which inverse is used in here!
-      invDiag.push_back(inverse_2);
+      invDiag.push_back(inverse_1);
     }
-    // TODO: For 2x2 system only!
-    /*
-    if (i == 1)
-    {
-      auto scaling_matrix = std::make_shared<Core::LinAlg::SparseMatrix>(*kappa);
-      scaling_matrix->complete();
-
-      auto schur_penalty = Thyra::epetraLinearOp(
-          Teuchos::make_rcp<Epetra_CrsMatrix>(scaling_matrix->epetra_matrix()));
-
-      auto schur_scaled = Teko::explicitScale(-1.0, schur_penalty);
-
-      invDiag.push_back(buildInverse(*invFact, precFact, schur_scaled, state, opPrefix, i));
-    }
-    */
     else
     {
       auto block = Teko::getBlock(i, i, A);

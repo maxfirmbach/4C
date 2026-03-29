@@ -107,6 +107,7 @@ void Core::LinearSolver::Parameters::compute_solver_parameters(
     solverlist.set<std::shared_ptr<Core::LinAlg::MultiVector<double>>>("nullspace", nullspace);
   }
 
+  /*
   // set body index information
   {
     auto body_indices = std::make_shared<Core::LinAlg::Vector<int>>(*nullspace_dof_map);
@@ -158,6 +159,7 @@ void Core::LinearSolver::Parameters::compute_solver_parameters(
 
     solverlist.set<std::shared_ptr<Core::LinAlg::Vector<int>>>("bodyid", body_indices);
   }
+  */
 }
 
 //----------------------------------------------------------------------------------

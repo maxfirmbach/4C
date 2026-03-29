@@ -82,6 +82,10 @@ void BeamInteraction::SubmodelEvaluator::BeamContactAssemblyManagerInDirect::eva
         }
       };
 
+      // TODO: Here we fill the global variable
+      relevant_penalty_param =
+          beam_to_solid_volume_meshtying_params.get_augmentation_scaling_parameter_beam();
+
       add_scaling_values_to_vector(*solid_map,
           beam_to_solid_volume_meshtying_params.get_augmentation_scaling_parameter_solid());
       add_scaling_values_to_vector(*beam_map,

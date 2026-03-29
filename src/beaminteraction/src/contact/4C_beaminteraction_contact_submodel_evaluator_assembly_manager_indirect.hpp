@@ -15,6 +15,7 @@
 
 FOUR_C_NAMESPACE_OPEN
 
+extern double relevant_penalty_param;
 
 // Forward declaration.
 namespace BeamInteraction
