@@ -244,22 +244,31 @@ void BeamInteraction::SubmodelEvaluator::BeamContact::setup()
  *----------------------------------------------------------------------*/
 bool BeamInteraction::SubmodelEvaluator::BeamContact::have_lagrange_dofs() const
 {
-  if (assembly_managers_.size() == 0) return false;
+  bool found_lagrange_manager = false;
 
-  const auto indirect_assembly_manager =
-      std::dynamic_pointer_cast<BeamContactAssemblyManagerInDirect>(assembly_managers_[0]);
-  if (indirect_assembly_manager)
+  for (const auto& assembly_manager : assembly_managers_)
   {
+    const auto indirect_assembly_manager =
+        std::dynamic_pointer_cast<BeamContactAssemblyManagerInDirect>(assembly_manager);
+
+    if (!indirect_assembly_manager) continue;
+
     const auto mortar_manager = indirect_assembly_manager->get_mortar_manager();
-    if (mortar_manager)
+
+    if (mortar_manager && mortar_manager->have_lagrange_dofs())
     {
-      const bool have_lagrange_dofs = mortar_manager->have_lagrange_dofs();
-      if (have_lagrange_dofs && assembly_managers_.size() != 1)
-        FOUR_C_THROW("Only working for single assembly manager");
-      return have_lagrange_dofs;
+      if (found_lagrange_manager)
+      {
+        FOUR_C_THROW(
+            "Multiple beam-contact assembly managers with Lagrange multiplier DOFs are not "
+            "supported.");
+      }
+
+      found_lagrange_manager = true;
     }
   }
-  return false;
+
+  return found_lagrange_manager;
 }
 
 /*----------------------------------------------------------------------*
@@ -267,10 +276,24 @@ bool BeamInteraction::SubmodelEvaluator::BeamContact::have_lagrange_dofs() const
 std::shared_ptr<const BeamInteraction::SubmodelEvaluator::BeamContactAssemblyManagerInDirect>
 BeamInteraction::SubmodelEvaluator::BeamContact::get_lagrange_multiplier_assembly_manager() const
 {
-  if (!std::dynamic_pointer_cast<BeamContactAssemblyManagerInDirect>(assembly_managers_[0]))
-    FOUR_C_THROW("Expected a BeamContact Assembly Manager");
-  if (assembly_managers_.size() != 1) FOUR_C_THROW("Only working for single assembly manager");
-  return std::dynamic_pointer_cast<BeamContactAssemblyManagerInDirect>(assembly_managers_[0]);
+  if (!have_lagrange_dofs()) return nullptr;
+
+  for (const auto& assembly_manager : assembly_managers_)
+  {
+    const auto indirect_manager =
+        std::dynamic_pointer_cast<BeamContactAssemblyManagerInDirect>(assembly_manager);
+
+    if (!indirect_manager) continue;
+
+    const auto mortar_manager = indirect_manager->get_mortar_manager();
+
+    if (mortar_manager && mortar_manager->have_lagrange_dofs())
+    {
+      return indirect_manager;
+    }
+  }
+
+  return nullptr;
 }
 
 /*----------------------------------------------------------------------*
