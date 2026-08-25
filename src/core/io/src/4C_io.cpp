@@ -1118,68 +1118,6 @@ void Core::IO::DiscretizationWriter::write_element_data(bool writeowner)
   }
 }
 
-/*----------------------------------------------------------------------*/
-/*----------------------------------------------------------------------*/
-void Core::IO::DiscretizationWriter::write_node_data(bool writeowner)
-{
-  if (binio_)
-  {
-    std::map<std::string, int>::const_iterator fool;
-    std::map<std::string, int> names;  // contains name and dimension of data
-
-    // loop over all nodes and build map of data names and dimensions
-    const Core::LinAlg::Map* noderowmap = dis_.node_row_map();
-    if (writeowner == true)
-    {
-      for (int i = 0; i < noderowmap->num_my_elements(); ++i)
-      {
-        // write owner of every node
-        dis_.l_row_node(i)->vis_owner(names);
-      }
-    }
-
-    for (int i = 0; i < noderowmap->num_my_elements(); ++i)
-    {
-      // get names and dimensions from every node
-      dis_.l_row_node(i)->vis_names(names);
-    }
-
-    /* By applying gather_all we get the combined map including all nodal values
-     * which were found by vis_names
-     */
-    Core::LinAlg::gather_all(names, get_comm());
-
-    // make sure there's no name with a dimension of less than 1
-    for (fool = names.begin(); fool != names.end(); ++fool)
-      if (fool->second < 1) FOUR_C_THROW("Dimension of data must be at least 1");
-
-    // loop all names acquired form the nodes and fill data vectors
-    for (fool = names.begin(); fool != names.end(); ++fool)
-    {
-      const int dimension = fool->second;
-      std::vector<double> nodedata(dimension);
-
-      // MultiVector stuff from the nodes is put in
-      Core::LinAlg::MultiVector<double> sysdata(*noderowmap, dimension, true);
-
-      for (int i = 0; i < noderowmap->num_my_elements(); ++i)
-      {
-        // zero is the default value if not all nodes write the same node data
-        for (int idim = 0; idim < dimension; ++idim) nodedata[idim] = 0.0;
-
-        // get data for a given name from node and put in sysdata
-        dis_.l_row_node(i)->vis_data(fool->first, nodedata);
-        if ((int)nodedata.size() != dimension)
-          FOUR_C_THROW("element manipulated size of visualization data");
-
-        for (int j = 0; j < dimension; ++j) sysdata.get_vector(j).get_values()[i] = nodedata[j];
-      }
-
-      write_multi_vector(fool->first, sysdata, Core::IO::nodevector);
-
-    }  // for (fool = names.begin(); fool!= names.end(); ++fool)
-  }
-}
 
 /*----------------------------------------------------------------------*
  *                                                          gammi 05/08 *

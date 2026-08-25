@@ -309,9 +309,6 @@ namespace Core::IO
     //! write element data to file
     void write_element_data(bool writeowner);
 
-    //! write node data to file
-    void write_node_data(bool writeowner);
-
     //! write a non discretisation based vector of chars
     void write_char_data(const std::string name, std::vector<char>& charvec);
 
