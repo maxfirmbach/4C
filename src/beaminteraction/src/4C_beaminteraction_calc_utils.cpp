@@ -730,10 +730,11 @@ namespace BeamInteraction
 
       const bool is_hermite = beam3r->hermite_centerline_interpolation();
 
-      if ((is_hermite && beam3r->num_node() != 3) || (!is_hermite && beam3r->num_node() != 2))
+      if (is_hermite && (beam3r->num_node() != 3))
         FOUR_C_THROW(
-            "The function get_element_rot_gid_indices is only implemented for Simo-Reissner beam "
-            "elements with hermite3line2 and line2line2 interpolation!");
+            "The function get_element_rot_gid_indices is not implemented for Simo-Reissner beam "
+            "elements with hermite interpolation and %d nodes!",
+            beam3r->num_node());
 
       // Get all GID of the element
       std::vector<int> lm_beam, gid_solid, lmowner, lmstride;

@@ -30,6 +30,27 @@ namespace GeometryPair
 namespace GeometryPair
 {
   /**
+   * @brief Maps the number of nodes of a line element to its finite-element cell type.
+   *
+   * The mapping is evaluated at compile time. Line elements with two, three, or four
+   * nodes are mapped to @c line2, @c line3, and @c line4, respectively. Unsupported
+   * node counts are mapped to @c Core::FE::CellType::dis_none.
+   *
+   * @tparam n_nodes Number of nodes of the line element.
+   */
+  template <unsigned int n_nodes>
+  inline constexpr Core::FE::CellType line_n_nodes_to_cell_type = Core::FE::CellType::dis_none;
+
+  template <>
+  inline constexpr auto line_n_nodes_to_cell_type<2> = Core::FE::CellType::line2;
+
+  template <>
+  inline constexpr auto line_n_nodes_to_cell_type<3> = Core::FE::CellType::line3;
+
+  template <>
+  inline constexpr auto line_n_nodes_to_cell_type<4> = Core::FE::CellType::line4;
+
+  /**
    * \brief Convert the enum DiscretizationTypeGeometry to a human readable string.
    * @param discretization_type (in)
    * @return Human readable string representation of the enum.
