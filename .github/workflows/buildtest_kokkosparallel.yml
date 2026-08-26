@@ -102,7 +102,7 @@ jobs:
           build-directory: ${{ github.workspace }}/build
           use-ccache: "true"
 
-  ensure_all_tests_pass:
+  ensure_all_tests_pass_kokkos:
     needs:
       - kokkoscuda_build
       - kokkosopenmp_build
