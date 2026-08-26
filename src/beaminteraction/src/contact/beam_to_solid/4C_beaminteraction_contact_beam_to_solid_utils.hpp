@@ -117,16 +117,19 @@ namespace BeamInteraction
   /**
    * \brief Setup the triad interpolation scheme for the current triad and reference triad of the
    * given beam element.
+   * @tparam n_nodes_rot number of rotational nodes.
    * @param discret (in) discretization.
    * @param displacement_vector (in) Global displacement vector.
    * @param ele (in) Pointer to the beam element.
    * @param triad_interpolation_scheme (out) Interpolation of current triad field..
    * @param ref_triad_interpolation_scheme (out) Interpolation of reference triad field.
    */
+  template <unsigned int n_nodes_rot>
   void get_beam_triad_interpolation_scheme(const Core::FE::Discretization& discret,
       const Core::LinAlg::Vector<double>& displacement_vector, const Core::Elements::Element* ele,
-      LargeRotations::TriadInterpolationLocalRotationVectors<3, double>& triad_interpolation_scheme,
-      LargeRotations::TriadInterpolationLocalRotationVectors<3, double>&
+      LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot, double>&
+          triad_interpolation_scheme,
+      LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot, double>&
           ref_triad_interpolation_scheme);
 
   /**

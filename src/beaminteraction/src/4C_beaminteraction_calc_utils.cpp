@@ -722,29 +722,32 @@ namespace BeamInteraction
     std::vector<int> get_element_rot_gid_indices(
         const Core::FE::Discretization& discret, const Core::Elements::Element* element)
     {
-      const auto* beam_sr_element = dynamic_cast<const Discret::Elements::Beam3r*>(element);
-      if (beam_sr_element == nullptr)
+      const auto* beam3r = dynamic_cast<const Discret::Elements::Beam3r*>(element);
+      if (beam3r == nullptr)
         FOUR_C_THROW(
             "The function get_element_rot_gid_indices is only implemented for Simo-Reissner beam "
             "elements!");
 
-      if (not(beam_sr_element->num_node() == 3 and
-              beam_sr_element->hermite_centerline_interpolation()))
+      const bool is_hermite = beam3r->hermite_centerline_interpolation();
+
+      if ((is_hermite && beam3r->num_node() != 3) || (!is_hermite && beam3r->num_node() != 2))
         FOUR_C_THROW(
             "The function get_element_rot_gid_indices is only implemented for Simo-Reissner beam "
-            "elements with hermite3line2 interpolation!");
+            "elements with hermite3line2 and line2line2 interpolation!");
 
       // Get all GID of the element
       std::vector<int> lm_beam, gid_solid, lmowner, lmstride;
-      beam_sr_element->location_vector(discret, lm_beam, lmowner, lmstride);
+      beam3r->location_vector(discret, lm_beam, lmowner, lmstride);
 
       // Local indices of the rotational DOFs for the Simo-Reissner beam element.
-      constexpr auto n_dof_rot = 9;
-      std::array<int, n_dof_rot> rot_dof_indices{3, 4, 5, 12, 13, 14, 18, 19, 20};
+
+      const std::vector<int> rot_dof_indices =
+          is_hermite ? std::vector<int>{3, 4, 5, 12, 13, 14, 18, 19, 20}
+                     : std::vector<int>{3, 4, 5, 9, 10, 11};
 
       // Gather the GID of the rotational DOF
-      std::vector<int> element_rot_gid_indices(9, -1);
-      for (unsigned int i = 0; i < n_dof_rot; i++)
+      std::vector<int> element_rot_gid_indices(rot_dof_indices.size(), -1);
+      for (unsigned int i = 0; i < rot_dof_indices.size(); i++)
         element_rot_gid_indices[i] = lm_beam[rot_dof_indices[i]];
       return element_rot_gid_indices;
     }
