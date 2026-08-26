@@ -739,16 +739,26 @@ namespace BeamInteraction
       std::vector<int> lm_beam, gid_solid, lmowner, lmstride;
       beam3r->location_vector(discret, lm_beam, lmowner, lmstride);
 
-      // Local indices of the rotational DOFs for the Simo-Reissner beam element.
+      std::vector<int> rot_dof_indices;
 
-      const std::vector<int> rot_dof_indices =
-          is_hermite ? std::vector<int>{3, 4, 5, 12, 13, 14, 18, 19, 20}
-                     : std::vector<int>{3, 4, 5, 9, 10, 11};
+      if (is_hermite)
+      {
+        rot_dof_indices = {3, 4, 5, 12, 13, 14, 18, 19, 20};
+      }
+      else
+      {
+        rot_dof_indices.resize(3 * beam3r->num_node());
 
-      // Gather the GID of the rotational DOF
+        for (int i_node = 0; i_node < beam3r->num_node(); i_node++)
+          for (unsigned int i_dof = 0; i_dof < 3; i_dof++)
+            rot_dof_indices[i_node * 3 + i_dof] = i_node * 6 + 3 + i_dof;
+      }
+
       std::vector<int> element_rot_gid_indices(rot_dof_indices.size(), -1);
+
       for (unsigned int i = 0; i < rot_dof_indices.size(); i++)
         element_rot_gid_indices[i] = lm_beam[rot_dof_indices[i]];
+
       return element_rot_gid_indices;
     }
 

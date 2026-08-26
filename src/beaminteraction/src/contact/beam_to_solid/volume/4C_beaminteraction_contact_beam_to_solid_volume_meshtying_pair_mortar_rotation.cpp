@@ -267,11 +267,7 @@ void BeamInteraction::BeamToSolidVolumeMeshtyingPairMortarRotation<Beam, Solid, 
         for (unsigned int i_dim = 0; i_dim < 3; i_dim++)
           lambda_shape_functions_full(i_dim, 3 * i_node + i_dim) = lambda_shape_functions(i_node);
 
-      constexpr auto rotation_cell_type = n_nodes_rot_ == 2   ? Core::FE::CellType::line2
-                                          : n_nodes_rot_ == 3 ? Core::FE::CellType::line3
-                                                              : Core::FE::CellType::line4;
-
-      Core::FE::shape_function_1d(L_i, projected_gauss_point.get_eta(), rotation_cell_type);
+      Core::FE::shape_function_1d(L_i, projected_gauss_point.get_eta(), rotation_cell_type_);
       for (unsigned int i_node = 0; i_node < n_nodes_rot_; i_node++)
         for (unsigned int i_dim = 0; i_dim < 3; i_dim++)
           L_full(i_dim, 3 * i_node + i_dim) = L_i(i_node);
@@ -567,11 +563,7 @@ void BeamInteraction::BeamToSolidVolumeMeshtyingPairMortarRotation<Beam, Solid, 
         for (unsigned int i_dim = 0; i_dim < 3; i_dim++)
           lambda_shape_functions_full(i_dim, 3 * i_node + i_dim) = lambda_shape_functions(i_node);
 
-      constexpr auto rotation_cell_type = n_nodes_rot_ == 2   ? Core::FE::CellType::line2
-                                          : n_nodes_rot_ == 3 ? Core::FE::CellType::line3
-                                                              : Core::FE::CellType::line4;
-
-      Core::FE::shape_function_1d(L_i, projected_gauss_point.get_eta(), rotation_cell_type);
+      Core::FE::shape_function_1d(L_i, projected_gauss_point.get_eta(), rotation_cell_type_);
       for (unsigned int i_node = 0; i_node < n_nodes_rot_; i_node++)
         for (unsigned int i_dim = 0; i_dim < 3; i_dim++)
           L_full(i_dim, 3 * i_node + i_dim) = L_i(i_node);

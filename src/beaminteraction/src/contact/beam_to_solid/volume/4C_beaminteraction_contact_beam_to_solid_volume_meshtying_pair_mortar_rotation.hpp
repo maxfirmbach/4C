@@ -30,6 +30,18 @@ namespace LargeRotations
 
 namespace BeamInteraction
 {
+  template <unsigned int n_nodes>
+  inline constexpr Core::FE::CellType line_cell_type;
+
+  template <>
+  inline constexpr auto line_cell_type<2> = Core::FE::CellType::line2;
+
+  template <>
+  inline constexpr auto line_cell_type<3> = Core::FE::CellType::line3;
+
+  template <>
+  inline constexpr auto line_cell_type<4> = Core::FE::CellType::line4;
+
   /**
    * \brief Class for beam to solid rotational meshtying.
    * @param beam Type from GeometryPair::ElementDiscretization... representing the beam.
@@ -62,6 +74,8 @@ namespace BeamInteraction
     static constexpr unsigned int n_dof_rot_ = 3 * n_nodes_rot_;
 
     static constexpr unsigned int n_dof_pair_ = n_dof_rot_ + Solid::n_dof_;
+
+    Core::FE::CellType rotation_cell_type_ = line_cell_type<n_nodes_rot_>;
 
    public:
     /**
