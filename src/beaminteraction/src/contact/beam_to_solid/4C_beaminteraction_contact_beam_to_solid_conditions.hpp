@@ -302,12 +302,14 @@ namespace BeamInteraction
 
   /**
    * \brief Create a beam-to-solid volume pair depending on the solid volume shape.
+   * @tparam BeamShape Beam shape function to be used
    * @tparam BtsClass Beam-to-solid class to create
    * @tparam bts_template_arguments Template arguments when creating the class
    * @param shape (in) Shape of the solid volume
    * @return The created beam-to-solid pair
    */
-  template <template <typename...> class BtsClass, typename... BtsTemplateArguments>
+  template <typename BeamShape, template <typename...> class BtsClass,
+      typename... BtsTemplateArguments>
   std::shared_ptr<BeamInteraction::BeamContactPair> create_beam_to_solid_volume_pair_shape(
       const Core::FE::CellType shape);
 
@@ -333,6 +335,7 @@ namespace BeamInteraction
    * @tparam bts_mortar_shape Template collection of type of optional given (e.g. rotational) mortar
    * shape functions
    * @param shape (in) Shape of the solid volume
+   * @param beam_is_hermite If the beam centerline uses hermite interpolation
    * @param mortar_shape_function (in) Mortar shape function to be appended to the
    * bts_template_arguments in this call
    * @param other_mortar_shape_function (in) Other mortar shape functions
@@ -341,7 +344,7 @@ namespace BeamInteraction
   template <template <typename...> class BtsClass, typename... BtsMortarTemplateArguments,
       typename... BtsMortarShape>
   std::shared_ptr<BeamInteraction::BeamContactPair> create_beam_to_solid_volume_pair_mortar(
-      const Core::FE::CellType shape,
+      const Core::FE::CellType shape, const bool beam_is_hermite,
       const BeamToSolid::BeamToSolidMortarShapefunctions mortar_shape_function,
       BtsMortarShape... other_mortar_shape_function);
 
@@ -351,11 +354,12 @@ namespace BeamInteraction
    * @tparam BtsClass Beam-to-solid class to create
    * @tparam bts_mortar_template_arguments Template arguments when creating the class
    * @param shape (in) Shape of the solid volume
+   * @param beam_is_hermite If the beam centerline uses hermite interpolation
    * @return The created beam-to-solid pair
    */
   template <template <typename...> class BtsClass, typename... BtsMortarTemplateArguments>
   std::shared_ptr<BeamInteraction::BeamContactPair> create_beam_to_solid_volume_pair_mortar(
-      const Core::FE::CellType shape);
+      const Core::FE::CellType shape, const bool beam_is_hermite);
 }  // namespace BeamInteraction
 
 FOUR_C_NAMESPACE_CLOSE
