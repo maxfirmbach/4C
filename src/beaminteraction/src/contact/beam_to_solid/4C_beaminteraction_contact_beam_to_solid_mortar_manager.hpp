@@ -18,6 +18,8 @@
 
 FOUR_C_NAMESPACE_OPEN
 
+extern std::shared_ptr<Core::LinAlg::Vector<double>> kappa;
+
 namespace Core::FE
 {
   class Discretization;

@@ -554,6 +554,9 @@ void BeamInteraction::BeamToSolidMortarManager::evaluate_and_assemble_global_cou
     check_diagonal_like_structure(constraint_lin_beam_);
     check_diagonal_like_structure(force_beam_lin_lambda_);
   }
+
+  // TODO: Remove this output statement at some point
+  kappa = penalty_invert_kappa();
 }
 
 /**
