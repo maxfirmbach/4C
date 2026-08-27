@@ -284,30 +284,29 @@ void BeamInteraction::BeamToSolidConditionVolumeMeshtying::build_id_sets(
 /**
  *
  */
-template <template <typename...> class BtsClass, typename... BtsTemplateArguments>
+template <typename BeamShape, template <typename...> class BtsClass,
+    typename... BtsTemplateArguments>
 std::shared_ptr<BeamInteraction::BeamContactPair>
 BeamInteraction::create_beam_to_solid_volume_pair_shape(const Core::FE::CellType shape)
 {
   switch (shape)
   {
     case Core::FE::CellType::hex8:
-      return std::make_shared<
-          BtsClass<GeometryPair::t_hermite, GeometryPair::t_hex8, BtsTemplateArguments...>>();
+      return std::make_shared<BtsClass<BeamShape, GeometryPair::t_hex8, BtsTemplateArguments...>>();
     case Core::FE::CellType::hex20:
       return std::make_shared<
-          BtsClass<GeometryPair::t_hermite, GeometryPair::t_hex20, BtsTemplateArguments...>>();
+          BtsClass<BeamShape, GeometryPair::t_hex20, BtsTemplateArguments...>>();
     case Core::FE::CellType::hex27:
       return std::make_shared<
-          BtsClass<GeometryPair::t_hermite, GeometryPair::t_hex27, BtsTemplateArguments...>>();
+          BtsClass<BeamShape, GeometryPair::t_hex27, BtsTemplateArguments...>>();
     case Core::FE::CellType::tet4:
-      return std::make_shared<
-          BtsClass<GeometryPair::t_hermite, GeometryPair::t_tet4, BtsTemplateArguments...>>();
+      return std::make_shared<BtsClass<BeamShape, GeometryPair::t_tet4, BtsTemplateArguments...>>();
     case Core::FE::CellType::tet10:
       return std::make_shared<
-          BtsClass<GeometryPair::t_hermite, GeometryPair::t_tet10, BtsTemplateArguments...>>();
+          BtsClass<BeamShape, GeometryPair::t_tet10, BtsTemplateArguments...>>();
     case Core::FE::CellType::nurbs27:
       return std::make_shared<
-          BtsClass<GeometryPair::t_hermite, GeometryPair::t_nurbs27, BtsTemplateArguments...>>();
+          BtsClass<BeamShape, GeometryPair::t_nurbs27, BtsTemplateArguments...>>();
     default:
       FOUR_C_THROW("Wrong element type for solid element.");
       return nullptr;
@@ -350,7 +349,8 @@ BeamInteraction::create_beam_to_solid_volume_pair_shape_no_nurbs(const Core::FE:
 template <template <typename...> class BtsClass, typename... BtsMortarTemplateArguments,
     typename... BtsMortarShape>
 std::shared_ptr<BeamInteraction::BeamContactPair>
-BeamInteraction::create_beam_to_solid_volume_pair_mortar(const Core::FE::CellType shape,
+BeamInteraction::create_beam_to_solid_volume_pair_mortar(const Core::FE::CellType shape_solid,
+    const Core::FE::CellType shape_beam, const bool beam_is_hermite,
     const BeamToSolid::BeamToSolidMortarShapefunctions mortar_shape_function,
     BtsMortarShape... other_mortar_shape_function)
 {
@@ -358,19 +358,23 @@ BeamInteraction::create_beam_to_solid_volume_pair_mortar(const Core::FE::CellTyp
   {
     case BeamToSolid::BeamToSolidMortarShapefunctions::line2:
       return create_beam_to_solid_volume_pair_mortar<BtsClass, BtsMortarTemplateArguments...,
-          GeometryPair::t_line2>(shape, other_mortar_shape_function...);
+          GeometryPair::t_line2>(
+          shape_solid, shape_beam, beam_is_hermite, other_mortar_shape_function...);
     case BeamToSolid::BeamToSolidMortarShapefunctions::line3:
       return create_beam_to_solid_volume_pair_mortar<BtsClass, BtsMortarTemplateArguments...,
-          GeometryPair::t_line3>(shape, other_mortar_shape_function...);
+          GeometryPair::t_line3>(
+          shape_solid, shape_beam, beam_is_hermite, other_mortar_shape_function...);
     case BeamToSolid::BeamToSolidMortarShapefunctions::line4:
       return create_beam_to_solid_volume_pair_mortar<BtsClass, BtsMortarTemplateArguments...,
-          GeometryPair::t_line4>(shape, other_mortar_shape_function...);
+          GeometryPair::t_line4>(
+          shape_solid, shape_beam, beam_is_hermite, other_mortar_shape_function...);
     case BeamToSolid::BeamToSolidMortarShapefunctions::dual_hermite:
     {
       if constexpr (!BeamInteraction::is_rotation_pair_v<BtsClass>)
       {
         return create_beam_to_solid_volume_pair_mortar<BtsClass, BtsMortarTemplateArguments...,
-            BeamInteraction::t_hermite_dual>(shape, other_mortar_shape_function...);
+            BeamInteraction::t_hermite_dual>(
+            shape_solid, shape_beam, beam_is_hermite, other_mortar_shape_function...);
       }
 
       FOUR_C_THROW(
@@ -389,9 +393,31 @@ BeamInteraction::create_beam_to_solid_volume_pair_mortar(const Core::FE::CellTyp
  */
 template <template <typename...> class BtsClass, typename... BtsMortarTemplateArguments>
 std::shared_ptr<BeamInteraction::BeamContactPair>
-BeamInteraction::create_beam_to_solid_volume_pair_mortar(const Core::FE::CellType shape)
+BeamInteraction::create_beam_to_solid_volume_pair_mortar(const Core::FE::CellType shape_solid,
+    const Core::FE::CellType shape_beam, const bool beam_is_hermite)
 {
-  return create_beam_to_solid_volume_pair_shape<BtsClass, BtsMortarTemplateArguments...>(shape);
+  if (beam_is_hermite)
+  {
+    return create_beam_to_solid_volume_pair_shape<GeometryPair::t_hermite, BtsClass,
+        BtsMortarTemplateArguments...>(shape_solid);
+  }
+  else
+  {
+    switch (shape_beam)
+    {
+      case Core::FE::CellType::line2:
+        FOUR_C_THROW(
+            "Beam-solid volume coupling currently only supports beams with a hermite centerline.");
+      case Core::FE::CellType::line3:
+        FOUR_C_THROW(
+            "Beam-solid volume coupling currently only supports beams with a hermite centerline.");
+      case Core::FE::CellType::line4:
+        FOUR_C_THROW(
+            "Beam-solid volume coupling currently only supports beams with a hermite centerline.");
+      default:
+        FOUR_C_THROW("Currently only the cell types line2, line3 and line4 are supported.");
+    }
+  }
 }
 
 /**
@@ -401,7 +427,15 @@ std::shared_ptr<BeamInteraction::BeamContactPair>
 BeamInteraction::BeamToSolidConditionVolumeMeshtying::create_contact_pair_internal(
     const std::vector<Core::Elements::Element const*>& ele_ptrs)
 {
-  const Core::FE::CellType shape = ele_ptrs[1]->shape();
+  const auto* beam_element = dynamic_cast<const Discret::Elements::Beam3Base*>(ele_ptrs[0]);
+
+  FOUR_C_ASSERT_ALWAYS(
+      beam_element != nullptr, "Could not cast ele_ptrs[0] to Discret::Elements::Beam3Base.");
+
+  const Core::FE::CellType shape_beam = beam_element->shape();
+  const bool beam_is_hermite = beam_element->hermite_centerline_interpolation();
+
+  const Core::FE::CellType shape_solid = ele_ptrs[1]->shape();
   const auto beam_to_volume_params =
       std::dynamic_pointer_cast<const BeamToSolidVolumeMeshtyingParams>(beam_to_solid_params_);
   const BeamToSolid::BeamToSolidContactDiscretization contact_discretization =
@@ -411,7 +445,8 @@ BeamInteraction::BeamToSolidConditionVolumeMeshtying::create_contact_pair_intern
       BeamToSolid::BeamToSolidContactDiscretization::gauss_point_to_segment)
   {
     // Create the Gauss point to segment pairs.
-    return create_beam_to_solid_volume_pair_shape<BeamToSolidVolumeMeshtyingPairGaussPoint>(shape);
+    return create_beam_to_solid_volume_pair_shape<GeometryPair::t_hermite,
+        BeamToSolidVolumeMeshtyingPairGaussPoint>(shape_solid);
   }
   else if (contact_discretization == BeamToSolid::BeamToSolidContactDiscretization::mortar)
   {
@@ -424,13 +459,14 @@ BeamInteraction::BeamToSolidConditionVolumeMeshtying::create_contact_pair_intern
     {
       // Create the positional mortar pairs.
       return create_beam_to_solid_volume_pair_mortar<BeamToSolidVolumeMeshtyingPairMortar>(
-          shape, mortar_shape_function);
+          shape_solid, shape_beam, beam_is_hermite, mortar_shape_function);
     }
     else
     {
       // Create the rotational mortar pairs.
       return create_beam_to_solid_volume_pair_mortar<BeamToSolidVolumeMeshtyingPairMortarRotation>(
-          shape, mortar_shape_function, mortar_shape_function_rotation);
+          shape_solid, shape_beam, beam_is_hermite, mortar_shape_function,
+          mortar_shape_function_rotation);
     }
   }
   else if (contact_discretization ==
@@ -441,10 +477,10 @@ BeamInteraction::BeamToSolidConditionVolumeMeshtying::create_contact_pair_intern
     const auto eb_beam = dynamic_cast<const Discret::Elements::Beam3eb*>(ele_ptrs[0]);
     if (sr_beam != nullptr)
       return create_beam_to_solid_volume_pair_shape_no_nurbs<
-          BeamToSolidVolumeMeshtyingPair2D3DFull>(shape);
+          BeamToSolidVolumeMeshtyingPair2D3DFull>(shape_solid);
     else if (eb_beam != nullptr)
       return create_beam_to_solid_volume_pair_shape_no_nurbs<
-          BeamToSolidVolumeMeshtyingPair2D3DPlane>(shape);
+          BeamToSolidVolumeMeshtyingPair2D3DPlane>(shape_solid);
     else
       FOUR_C_THROW(
           "2D-3D coupling is only implemented for Simo-Reissner and torsion free beam elements.");
@@ -452,7 +488,7 @@ BeamInteraction::BeamToSolidConditionVolumeMeshtying::create_contact_pair_intern
   else if (contact_discretization ==
            BeamToSolid::BeamToSolidContactDiscretization::mortar_cross_section)
   {
-    return create_beam_to_solid_volume_pair_mortar_cross_section(shape,
+    return create_beam_to_solid_volume_pair_mortar_cross_section(shape_solid,
         beam_to_volume_params->get_mortar_shape_function_type(),
         beam_to_volume_params->get_number_of_fourier_modes());
   }
