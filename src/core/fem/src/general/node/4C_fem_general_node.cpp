@@ -135,17 +135,5 @@ void Core::Nodes::Node::set_pos(std::vector<double> nvector)
 }
 
 
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-bool Core::Nodes::Node::vis_data(const std::string& name, std::vector<double>& data)
-{
-  if (name == "Nodeowner")
-  {
-    if (static_cast<int>(data.size()) < 1) FOUR_C_THROW("Size mismatch");
-    data[0] = owner();
-    return true;
-  }
-  return false;
-}
 
 FOUR_C_NAMESPACE_CLOSE

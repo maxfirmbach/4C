@@ -1897,7 +1897,6 @@ void Solid::TimInt::output_restart(bool& datawritten)
   output_->write_vector("velocity", (*vel_)(0));
   output_->write_vector("acceleration", (*acc_)(0));
   output_->write_element_data(firstoutputofrun_);
-  output_->write_node_data(firstoutputofrun_);
   write_restart_force(output_);
   // owner of elements is just written once because it does not change during simulation (so far)
   firstoutputofrun_ = false;
@@ -1966,7 +1965,6 @@ void Solid::TimInt::output_state(bool& datawritten)
 
   // owner of elements is just written once because it does not change during simulation (so far)
   if (writeele_) output_->write_element_data(firstoutputofrun_);
-  output_->write_node_data(firstoutputofrun_);
   firstoutputofrun_ = false;
 
   // meshtying and contact output

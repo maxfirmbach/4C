@@ -674,7 +674,6 @@ void Solid::TimeInt::Base::output_state(
   // owner of elements is just written once because it does not change during
   // simulation (so far)
   iowriter.write_element_data(write_owner);
-  iowriter.write_node_data(write_owner);
 
   int_ptr_->output_step_state(iowriter);
 }
@@ -740,7 +739,6 @@ void Solid::TimeInt::Base::output_restart(bool& datawritten)
   new_io_step(datawritten);
 
   output_ptr->write_element_data(dataio_->is_first_output_of_run());
-  output_ptr->write_node_data(dataio_->is_first_output_of_run());
   dataio_->set_first_output_of_run(false);
 
   // add displacement, velocity and acceleration
