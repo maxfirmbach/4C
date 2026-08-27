@@ -149,15 +149,25 @@ namespace BeamInteraction
       }
 
       /**
-       * \brief Return flag if this submodel evaluator carries Lagrange multipliers.
+       * \brief Check whether an assembly manager provides Lagrange multiplier DOFs.
+       *
+       * \return True if a suitable assembly manager exists; otherwise false.
+       *
+       * \throws If multiple suitable assembly managers are found.
        */
       [[nodiscard]] bool have_lagrange_dofs() const;
 
       /**
-       * \brief Lagrange Multiplier specific function returning the first assembly manager.
+       * \brief Get the assembly manager providing Lagrange multiplier DOFs.
+       *
+       * \return The assembly manager providing Lagrange multiplier DOFs.
+       *
+       * \throws If no suitable assembly manager exists or if multiple suitable
+       *         assembly managers are found.
        */
-      std::shared_ptr<const BeamInteraction::SubmodelEvaluator::BeamContactAssemblyManagerInDirect>
+      [[nodiscard]] std::shared_ptr<const BeamContactAssemblyManagerInDirect>
       get_lagrange_multiplier_assembly_manager() const;
+
 
       /**
        * \brief Return the geometry pairs in this submodel evaluator.
@@ -214,6 +224,16 @@ namespace BeamInteraction
         check_init();
         return *beam_contact_params_ptr_;
       }
+
+      /**
+       * \brief Find the assembly manager providing Lagrange multiplier DOFs.
+       *
+       * \return The suitable assembly manager, or nullptr if none exists.
+       *
+       * \throws If multiple suitable assembly managers are found.
+       */
+      [[nodiscard]] std::shared_ptr<const BeamContactAssemblyManagerInDirect>
+      find_lagrange_multiplier_assembly_manager() const;
 
      public:
       inline BeamInteraction::BeamContactParams const& beam_contact_params() const
