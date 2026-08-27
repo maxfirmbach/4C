@@ -428,6 +428,10 @@ BeamInteraction::BeamToSolidConditionVolumeMeshtying::create_contact_pair_intern
     const std::vector<Core::Elements::Element const*>& ele_ptrs)
 {
   const auto* beam_element = dynamic_cast<const Discret::Elements::Beam3Base*>(ele_ptrs[0]);
+
+  FOUR_C_ASSERT_ALWAYS(
+      beam_element != nullptr, "Could not cast ele_ptrs[0] to Discret::Elements::Beam3Base.");
+
   const Core::FE::CellType shape_beam = beam_element->shape();
   const bool beam_is_hermite = beam_element->hermite_centerline_interpolation();
 
