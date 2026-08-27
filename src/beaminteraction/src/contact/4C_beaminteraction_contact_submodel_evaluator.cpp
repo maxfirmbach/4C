@@ -242,41 +242,10 @@ void BeamInteraction::SubmodelEvaluator::BeamContact::setup()
 
 /*----------------------------------------------------------------------*
  *----------------------------------------------------------------------*/
-bool BeamInteraction::SubmodelEvaluator::BeamContact::have_lagrange_dofs() const
-{
-  bool found_lagrange_manager = false;
-
-  for (const auto& assembly_manager : assembly_managers_)
-  {
-    const auto indirect_assembly_manager =
-        std::dynamic_pointer_cast<BeamContactAssemblyManagerInDirect>(assembly_manager);
-
-    if (!indirect_assembly_manager) continue;
-
-    const auto mortar_manager = indirect_assembly_manager->get_mortar_manager();
-
-    if (mortar_manager && mortar_manager->have_lagrange_dofs())
-    {
-      if (found_lagrange_manager)
-      {
-        FOUR_C_THROW(
-            "Multiple beam-contact assembly managers with Lagrange multiplier DOFs are not "
-            "supported.");
-      }
-
-      found_lagrange_manager = true;
-    }
-  }
-
-  return found_lagrange_manager;
-}
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
 std::shared_ptr<const BeamInteraction::SubmodelEvaluator::BeamContactAssemblyManagerInDirect>
-BeamInteraction::SubmodelEvaluator::BeamContact::get_lagrange_multiplier_assembly_manager() const
+BeamInteraction::SubmodelEvaluator::BeamContact::find_lagrange_multiplier_assembly_manager() const
 {
-  if (!have_lagrange_dofs()) return nullptr;
+  std::shared_ptr<const BeamContactAssemblyManagerInDirect> lagrange_manager;
 
   for (const auto& assembly_manager : assembly_managers_)
   {
@@ -286,14 +255,37 @@ BeamInteraction::SubmodelEvaluator::BeamContact::get_lagrange_multiplier_assembl
     if (!indirect_manager) continue;
 
     const auto mortar_manager = indirect_manager->get_mortar_manager();
+    if (!mortar_manager || !mortar_manager->have_lagrange_dofs()) continue;
 
-    if (mortar_manager && mortar_manager->have_lagrange_dofs())
-    {
-      return indirect_manager;
-    }
+    if (lagrange_manager)
+      FOUR_C_THROW(
+          "Multiple beam-contact assembly managers with Lagrange multiplier DOFs are not "
+          "supported.");
+
+    lagrange_manager = indirect_manager;
   }
 
-  return nullptr;
+  return lagrange_manager;
+}
+
+/*----------------------------------------------------------------------*
+ *----------------------------------------------------------------------*/
+bool BeamInteraction::SubmodelEvaluator::BeamContact::have_lagrange_dofs() const
+{
+  return find_lagrange_multiplier_assembly_manager() != nullptr;
+}
+
+/*----------------------------------------------------------------------*
+ *----------------------------------------------------------------------*/
+std::shared_ptr<const BeamInteraction::SubmodelEvaluator::BeamContactAssemblyManagerInDirect>
+BeamInteraction::SubmodelEvaluator::BeamContact::get_lagrange_multiplier_assembly_manager() const
+{
+  const auto lagrange_manager = find_lagrange_multiplier_assembly_manager();
+
+  if (!lagrange_manager)
+    FOUR_C_THROW("No beam-contact assembly manager with Lagrange multiplier DOFs is available.");
+
+  return lagrange_manager;
 }
 
 /*----------------------------------------------------------------------*
