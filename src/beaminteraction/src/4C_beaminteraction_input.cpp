@@ -113,8 +113,11 @@ void BeamInteraction::set_valid_conditions(
                                 "radii to define valid projection distance",
                     .default_value = 2.0}),
             parameter<int>("MAX_NUMBER_OF_PAIRS_PER_ELEMENT",
-                {.description = "How many Lagrange multipliers shall be allocated per beam element",
-                    .default_value = 0}),
+                {.description =
+                        "Maximum number of pairs that can be handled per beam element. This "
+                        "decides how many Lagrange multipliers are allocated per element.",
+                    .default_value = 1,
+                    .validator = Core::IO::InputSpecBuilders::Validators::positive<int>()}),
             parameter<
                 BeamInteraction::BeamToBeamPointCouplingPairParameters::ConstraintEnforcement>(
                 "CONSTRAINT_ENFORCEMENT",
