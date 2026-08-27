@@ -28,7 +28,7 @@ jobs:
         with:
           path: ${{ env.HOME }}/opt
           key: ${{ runner.os }}-deps-${{ hashFiles('./dependencies/darwin/compile_dependencies.sh', 'dependencies/darwin/**/install.sh',
-            'dependencies/current/**/install.sh') }}
+            'dependencies/current/**/install.sh') }}-brew-${{ steps.brew-versions.outputs.hash }}
       - name: Compile and install the dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
         run: |
