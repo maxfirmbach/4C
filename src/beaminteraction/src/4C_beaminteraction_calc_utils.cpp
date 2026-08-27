@@ -733,7 +733,7 @@ namespace BeamInteraction
       if (is_hermite && (beam3r->num_node() != 3))
         FOUR_C_THROW(
             "The function get_element_rot_gid_indices is not implemented for Simo-Reissner beam "
-            "elements with hermite interpolation and %d nodes!",
+            "elements with hermite interpolation and {} nodes!",
             beam3r->num_node());
 
       // Get all GID of the element

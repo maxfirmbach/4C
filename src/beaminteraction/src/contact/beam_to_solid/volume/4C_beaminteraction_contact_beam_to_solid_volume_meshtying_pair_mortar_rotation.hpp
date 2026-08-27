@@ -62,7 +62,10 @@ namespace BeamInteraction
         std::is_same_v<Beam, GeometryPair::t_hermite> ? 3 : Beam::n_nodes_;
     static constexpr unsigned int n_dof_rot_ = 3 * n_nodes_rot_;
 
-    Core::FE::CellType rotation_cell_type_ = GeometryPair::line_n_nodes_to_cell_type<n_nodes_rot_>;
+    static constexpr Core::FE::CellType rotation_cell_type_ =
+        GeometryPair::line_n_nodes_to_cell_type<n_nodes_rot_>;
+    static_assert(rotation_cell_type_ != Core::FE::CellType::dis_none,
+        "Unsupported rotational interpolation node count (expected 2, 3 or 4).");
 
     static constexpr unsigned int n_dof_pair_ = n_dof_rot_ + Solid::n_dof_;
 
