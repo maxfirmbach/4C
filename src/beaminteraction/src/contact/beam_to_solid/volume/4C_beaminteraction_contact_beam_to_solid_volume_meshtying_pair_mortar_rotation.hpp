@@ -12,6 +12,7 @@
 #include "4C_config.hpp"
 
 #include "4C_beaminteraction_contact_beam_to_solid_volume_meshtying_pair_mortar.hpp"
+#include "4C_geometry_pair_utility_functions.hpp"
 
 FOUR_C_NAMESPACE_OPEN
 
@@ -57,7 +58,15 @@ namespace BeamInteraction
         typename Core::FADUtils::HigherOrderFadType<2, scalar_type_rot_1st>::type;
 
     //! Number of rotational DOF for the SR beams;
-    static constexpr unsigned int n_dof_rot_ = 9;
+    static constexpr unsigned int n_nodes_rot_ =
+        std::is_same_v<Beam, GeometryPair::t_hermite> ? 3 : Beam::n_nodes_;
+    static constexpr unsigned int n_dof_rot_ = 3 * n_nodes_rot_;
+
+    static constexpr Core::FE::CellType rotation_cell_type_ =
+        GeometryPair::line_n_nodes_to_cell_type<n_nodes_rot_>;
+    static_assert(rotation_cell_type_ != Core::FE::CellType::dis_none,
+        "Unsupported rotational interpolation node count (expected 2, 3 or 4).");
+
     static constexpr unsigned int n_dof_pair_ = n_dof_rot_ + Solid::n_dof_;
 
    public:
@@ -100,9 +109,9 @@ namespace BeamInteraction
     void evaluate_rotational_coupling_terms(
         const BeamToSolid::BeamToSolidRotationCoupling& rot_coupling_type,
         const GeometryPair::ElementData<Solid, scalar_type_rot_1st>& q_solid,
-        const LargeRotations::TriadInterpolationLocalRotationVectors<3, double>&
+        const LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot_, double>&
             triad_interpolation_scheme,
-        const LargeRotations::TriadInterpolationLocalRotationVectors<3, double>&
+        const LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot_, double>&
             ref_triad_interpolation_scheme,
         Core::LinAlg::Matrix<MortarRot::n_dof_, 1, double>& local_g,
         Core::LinAlg::Matrix<MortarRot::n_dof_, n_dof_rot_, double>& local_G_B,
@@ -118,9 +127,9 @@ namespace BeamInteraction
         const BeamToSolid::BeamToSolidRotationCoupling& rot_coupling_type,
         const GeometryPair::ElementData<Solid, scalar_type_rot_2nd>& q_solid,
         Core::LinAlg::Matrix<MortarRot::n_dof_, 1, double>& lambda_rot,
-        const LargeRotations::TriadInterpolationLocalRotationVectors<3, double>&
+        const LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot_, double>&
             triad_interpolation_scheme,
-        const LargeRotations::TriadInterpolationLocalRotationVectors<3, double>&
+        const LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot_, double>&
             ref_triad_interpolation_scheme,
         Core::LinAlg::Matrix<n_dof_rot_, n_dof_rot_, double>& local_stiff_BB,
         Core::LinAlg::Matrix<n_dof_rot_, Solid::n_dof_, double>& local_stiff_BS,

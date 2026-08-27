@@ -62,8 +62,10 @@ void BeamInteraction::BeamToSolidVolumeMeshtyingPairMortarRotation<Beam, Solid, 
   if (this->line_to_3D_segments_.size() == 0) return;
 
   // Get the beam triad interpolation schemes.
-  LargeRotations::TriadInterpolationLocalRotationVectors<3, double> triad_interpolation_scheme;
-  LargeRotations::TriadInterpolationLocalRotationVectors<3, double> ref_triad_interpolation_scheme;
+  LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot_, double>
+      triad_interpolation_scheme;
+  LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot_, double>
+      ref_triad_interpolation_scheme;
   get_beam_triad_interpolation_scheme(discret, *displacement_vector, this->element1(),
       triad_interpolation_scheme, ref_triad_interpolation_scheme);
 
@@ -156,9 +158,9 @@ void BeamInteraction::BeamToSolidVolumeMeshtyingPairMortarRotation<Beam, Solid, 
     MortarRot>::evaluate_rotational_coupling_terms(  //
     const BeamToSolid::BeamToSolidRotationCoupling& rot_coupling_type,
     const GeometryPair::ElementData<Solid, scalar_type_rot_1st>& q_solid,
-    const LargeRotations::TriadInterpolationLocalRotationVectors<3, double>&
+    const LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot_, double>&
         triad_interpolation_scheme,
-    const LargeRotations::TriadInterpolationLocalRotationVectors<3, double>&
+    const LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot_, double>&
         ref_triad_interpolation_scheme,
     Core::LinAlg::Matrix<MortarRot::n_dof_, 1, double>& local_g,
     Core::LinAlg::Matrix<MortarRot::n_dof_, n_dof_rot_, double>& local_G_B,
@@ -187,7 +189,7 @@ void BeamInteraction::BeamToSolidVolumeMeshtyingPairMortarRotation<Beam, Solid, 
   Core::LinAlg::Matrix<MortarRot::n_nodes_, 1, double> lambda_shape_functions;
   Core::LinAlg::Matrix<3, MortarRot::n_dof_, double> lambda_shape_functions_full(
       Core::LinAlg::Initialization::zero);
-  Core::LinAlg::SerialDenseVector L_i(3);
+  Core::LinAlg::SerialDenseVector L_i(n_nodes_rot_);
   Core::LinAlg::Matrix<3, n_dof_rot_, double> L_full(Core::LinAlg::Initialization::zero);
   std::vector<Core::LinAlg::Matrix<3, 3, double>> I_beam_tilde;
   Core::LinAlg::Matrix<3, n_dof_rot_, double> I_beam_tilde_full;
@@ -265,14 +267,14 @@ void BeamInteraction::BeamToSolidVolumeMeshtyingPairMortarRotation<Beam, Solid, 
         for (unsigned int i_dim = 0; i_dim < 3; i_dim++)
           lambda_shape_functions_full(i_dim, 3 * i_node + i_dim) = lambda_shape_functions(i_node);
 
-      Core::FE::shape_function_1d(L_i, projected_gauss_point.get_eta(), Core::FE::CellType::line3);
-      for (unsigned int i_node = 0; i_node < 3; i_node++)
+      Core::FE::shape_function_1d(L_i, projected_gauss_point.get_eta(), rotation_cell_type_);
+      for (unsigned int i_node = 0; i_node < n_nodes_rot_; i_node++)
         for (unsigned int i_dim = 0; i_dim < 3; i_dim++)
           L_full(i_dim, 3 * i_node + i_dim) = L_i(i_node);
 
       triad_interpolation_scheme.get_nodal_generalized_rotation_interpolation_matrices_at_xi(
           I_beam_tilde, projected_gauss_point.get_eta());
-      for (unsigned int i_node = 0; i_node < 3; i_node++)
+      for (unsigned int i_node = 0; i_node < n_nodes_rot_; i_node++)
         for (unsigned int i_dim_0 = 0; i_dim_0 < 3; i_dim_0++)
           for (unsigned int i_dim_1 = 0; i_dim_1 < 3; i_dim_1++)
             I_beam_tilde_full(i_dim_0, i_node * 3 + i_dim_1) =
@@ -353,8 +355,10 @@ void BeamInteraction::BeamToSolidVolumeMeshtyingPairMortarRotation<Beam, Solid, 
   if (stiffness_matrix == nullptr) return;
 
   // Get the beam triad interpolation schemes.
-  LargeRotations::TriadInterpolationLocalRotationVectors<3, double> triad_interpolation_scheme;
-  LargeRotations::TriadInterpolationLocalRotationVectors<3, double> ref_triad_interpolation_scheme;
+  LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot_, double>
+      triad_interpolation_scheme;
+  LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot_, double>
+      ref_triad_interpolation_scheme;
   get_beam_triad_interpolation_scheme(discret, displacement_vector, this->element1(),
       triad_interpolation_scheme, ref_triad_interpolation_scheme);
 
@@ -442,9 +446,9 @@ void BeamInteraction::BeamToSolidVolumeMeshtyingPairMortarRotation<Beam, Solid, 
         const BeamToSolid::BeamToSolidRotationCoupling& rot_coupling_type,
         const GeometryPair::ElementData<Solid, scalar_type_rot_2nd>& q_solid,
         Core::LinAlg::Matrix<MortarRot::n_dof_, 1, double>& lambda_rot,
-        const LargeRotations::TriadInterpolationLocalRotationVectors<3, double>&
+        const LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot_, double>&
             triad_interpolation_scheme,
-        const LargeRotations::TriadInterpolationLocalRotationVectors<3, double>&
+        const LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot_, double>&
             ref_triad_interpolation_scheme,
         Core::LinAlg::Matrix<n_dof_rot_, n_dof_rot_, double>& local_stiff_BB,
         Core::LinAlg::Matrix<n_dof_rot_, Solid::n_dof_, double>& local_stiff_BS,
@@ -472,7 +476,7 @@ void BeamInteraction::BeamToSolidVolumeMeshtyingPairMortarRotation<Beam, Solid, 
   Core::LinAlg::Matrix<MortarRot::n_nodes_, 1, double> lambda_shape_functions;
   Core::LinAlg::Matrix<3, MortarRot::n_dof_, scalar_type_rot_1st> lambda_shape_functions_full(
       Core::LinAlg::Initialization::zero);
-  Core::LinAlg::SerialDenseVector L_i(3);
+  Core::LinAlg::SerialDenseVector L_i(n_nodes_rot_);
   Core::LinAlg::Matrix<3, n_dof_rot_, scalar_type_rot_1st> L_full(
       Core::LinAlg::Initialization::zero);
   std::vector<Core::LinAlg::Matrix<3, 3, double>> I_beam_tilde;
@@ -559,14 +563,14 @@ void BeamInteraction::BeamToSolidVolumeMeshtyingPairMortarRotation<Beam, Solid, 
         for (unsigned int i_dim = 0; i_dim < 3; i_dim++)
           lambda_shape_functions_full(i_dim, 3 * i_node + i_dim) = lambda_shape_functions(i_node);
 
-      Core::FE::shape_function_1d(L_i, projected_gauss_point.get_eta(), Core::FE::CellType::line3);
-      for (unsigned int i_node = 0; i_node < 3; i_node++)
+      Core::FE::shape_function_1d(L_i, projected_gauss_point.get_eta(), rotation_cell_type_);
+      for (unsigned int i_node = 0; i_node < n_nodes_rot_; i_node++)
         for (unsigned int i_dim = 0; i_dim < 3; i_dim++)
           L_full(i_dim, 3 * i_node + i_dim) = L_i(i_node);
 
       triad_interpolation_scheme.get_nodal_generalized_rotation_interpolation_matrices_at_xi(
           I_beam_tilde, projected_gauss_point.get_eta());
-      for (unsigned int i_node = 0; i_node < 3; i_node++)
+      for (unsigned int i_node = 0; i_node < n_nodes_rot_; i_node++)
         for (unsigned int i_dim_0 = 0; i_dim_0 < 3; i_dim_0++)
           for (unsigned int i_dim_1 = 0; i_dim_1 < 3; i_dim_1++)
             I_beam_tilde_full(i_dim_0, i_node * 3 + i_dim_1) =

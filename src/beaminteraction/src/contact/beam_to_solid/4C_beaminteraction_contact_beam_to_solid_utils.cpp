@@ -183,10 +183,12 @@ BeamInteraction::mortar_shape_functions_to_number_of_lagrange_values(
 /**
  *
  */
+template <unsigned int n_nodes_rot>
 void BeamInteraction::get_beam_triad_interpolation_scheme(const Core::FE::Discretization& discret,
     const Core::LinAlg::Vector<double>& displacement_vector, const Core::Elements::Element* ele,
-    LargeRotations::TriadInterpolationLocalRotationVectors<3, double>& triad_interpolation_scheme,
-    LargeRotations::TriadInterpolationLocalRotationVectors<3, double>&
+    LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot, double>&
+        triad_interpolation_scheme,
+    LargeRotations::TriadInterpolationLocalRotationVectors<n_nodes_rot, double>&
         ref_triad_interpolation_scheme)
 {
   // Check that the beam element is a SR beam.
@@ -200,14 +202,14 @@ void BeamInteraction::get_beam_triad_interpolation_scheme(const Core::FE::Discre
       discret, beam_ele, displacement_vector, beam_displacement_vector_full_double);
 
   // Create object for triad interpolation schemes.
-  std::vector<Core::LinAlg::Matrix<4, 1, double>> nodal_quaternions(3);
-  beam_ele->get_nodal_triads_from_full_disp_vec_or_from_disp_theta<3, double>(
+  std::vector<Core::LinAlg::Matrix<4, 1, double>> nodal_quaternions(n_nodes_rot);
+  beam_ele->get_nodal_triads_from_full_disp_vec_or_from_disp_theta<n_nodes_rot, double>(
       beam_displacement_vector_full_double, nodal_quaternions);
   triad_interpolation_scheme.reset(nodal_quaternions);
 
   std::vector<double> beam_displacement_vector_full_ref(
       beam_displacement_vector_full_double.size(), 0.0);
-  beam_ele->get_nodal_triads_from_full_disp_vec_or_from_disp_theta<3, double>(
+  beam_ele->get_nodal_triads_from_full_disp_vec_or_from_disp_theta<n_nodes_rot, double>(
       beam_displacement_vector_full_ref, nodal_quaternions);
   ref_triad_interpolation_scheme.reset(nodal_quaternions);
 }
@@ -882,6 +884,24 @@ void BeamInteraction::check_diagonal_like_structure(
 namespace BeamInteraction
 {
   using namespace GeometryPair;
+
+  template void get_beam_triad_interpolation_scheme<2>(const Core::FE::Discretization& discret,
+      const Core::LinAlg::Vector<double>& displacement_vector, const Core::Elements::Element* ele,
+      LargeRotations::TriadInterpolationLocalRotationVectors<2, double>& triad_interpolation_scheme,
+      LargeRotations::TriadInterpolationLocalRotationVectors<2, double>&
+          ref_triad_interpolation_scheme);
+
+  template void get_beam_triad_interpolation_scheme<3>(const Core::FE::Discretization& discret,
+      const Core::LinAlg::Vector<double>& displacement_vector, const Core::Elements::Element* ele,
+      LargeRotations::TriadInterpolationLocalRotationVectors<3, double>& triad_interpolation_scheme,
+      LargeRotations::TriadInterpolationLocalRotationVectors<3, double>&
+          ref_triad_interpolation_scheme);
+
+  template void get_beam_triad_interpolation_scheme<4>(const Core::FE::Discretization& discret,
+      const Core::LinAlg::Vector<double>& displacement_vector, const Core::Elements::Element* ele,
+      LargeRotations::TriadInterpolationLocalRotationVectors<4, double>& triad_interpolation_scheme,
+      LargeRotations::TriadInterpolationLocalRotationVectors<4, double>&
+          ref_triad_interpolation_scheme);
 
   // Helper types for the macro initialization. The compiler has troubles inserting the templated
   // typenames into the macros.
