@@ -199,6 +199,26 @@ namespace BeamInteraction
   using namespace GeometryPair;
 
   // Beam-to-volume pairs
+  template class BeamToSolidPairBase<double, double, t_line2, t_hex8>;
+  template class BeamToSolidPairBase<double, double, t_line2, t_hex20>;
+  template class BeamToSolidPairBase<double, double, t_line2, t_hex27>;
+  template class BeamToSolidPairBase<double, double, t_line2, t_tet4>;
+  template class BeamToSolidPairBase<double, double, t_line2, t_tet10>;
+  template class BeamToSolidPairBase<double, double, t_line2, t_nurbs27>;
+
+  template class BeamToSolidPairBase<line_to_volume_scalar_type<t_line2, t_hex8>, double, t_line2,
+      t_hex8>;
+  template class BeamToSolidPairBase<line_to_volume_scalar_type<t_line2, t_hex20>, double, t_line2,
+      t_hex20>;
+  template class BeamToSolidPairBase<line_to_volume_scalar_type<t_line2, t_hex27>, double, t_line2,
+      t_hex27>;
+  template class BeamToSolidPairBase<line_to_volume_scalar_type<t_line2, t_tet4>, double, t_line2,
+      t_tet4>;
+  template class BeamToSolidPairBase<line_to_volume_scalar_type<t_line2, t_tet10>, double, t_line2,
+      t_tet10>;
+  template class BeamToSolidPairBase<line_to_volume_scalar_type<t_line2, t_nurbs27>, double,
+      t_line2, t_nurbs27>;
+
   template class BeamToSolidPairBase<double, double, t_hermite, t_hex8>;
   template class BeamToSolidPairBase<double, double, t_hermite, t_hex20>;
   template class BeamToSolidPairBase<double, double, t_hermite, t_hex27>;

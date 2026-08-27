@@ -639,6 +639,18 @@ namespace BeamInteraction
 
 #define initialize_template_beam_to_solid_volume_meshtying_pair_mortar_rotation(            \
     mortar, mortar_rot)                                                                     \
+  template class BeamToSolidVolumeMeshtyingPairMortarRotation<t_line2, t_hex8, mortar,      \
+      mortar_rot>;                                                                          \
+  template class BeamToSolidVolumeMeshtyingPairMortarRotation<t_line2, t_hex20, mortar,     \
+      mortar_rot>;                                                                          \
+  template class BeamToSolidVolumeMeshtyingPairMortarRotation<t_line2, t_hex27, mortar,     \
+      mortar_rot>;                                                                          \
+  template class BeamToSolidVolumeMeshtyingPairMortarRotation<t_line2, t_tet4, mortar,      \
+      mortar_rot>;                                                                          \
+  template class BeamToSolidVolumeMeshtyingPairMortarRotation<t_line2, t_tet10, mortar,     \
+      mortar_rot>;                                                                          \
+  template class BeamToSolidVolumeMeshtyingPairMortarRotation<t_line2, t_nurbs27, mortar,   \
+      mortar_rot>;                                                                          \
   template class BeamToSolidVolumeMeshtyingPairMortarRotation<t_hermite, t_hex8, mortar,    \
       mortar_rot>;                                                                          \
   template class BeamToSolidVolumeMeshtyingPairMortarRotation<t_hermite, t_hex20, mortar,   \

@@ -60,6 +60,35 @@ std::shared_ptr<GeometryPair::GeometryPairBase> GeometryPair::geometry_pair_line
  * Explicit template initialization of factory function.
  */
 template std::shared_ptr<GeometryPair::GeometryPairBase>
+GeometryPair::geometry_pair_line_to_volume_factory<double, GeometryPair::t_line2,
+    GeometryPair::t_hex8>(const Core::Elements::Element*, const Core::Elements::Element*,
+    const std::shared_ptr<GeometryEvaluationDataBase>&);
+template std::shared_ptr<GeometryPair::GeometryPairBase>
+GeometryPair::geometry_pair_line_to_volume_factory<double, GeometryPair::t_line2,
+    GeometryPair::t_hex20>(const Core::Elements::Element*, const Core::Elements::Element*,
+    const std::shared_ptr<GeometryEvaluationDataBase>&);
+template std::shared_ptr<GeometryPair::GeometryPairBase>
+GeometryPair::geometry_pair_line_to_volume_factory<double, GeometryPair::t_line2,
+    GeometryPair::t_hex27>(const Core::Elements::Element*, const Core::Elements::Element*,
+    const std::shared_ptr<GeometryEvaluationDataBase>&);
+template std::shared_ptr<GeometryPair::GeometryPairBase>
+GeometryPair::geometry_pair_line_to_volume_factory<double, GeometryPair::t_line2,
+    GeometryPair::t_tet4>(const Core::Elements::Element*, const Core::Elements::Element*,
+    const std::shared_ptr<GeometryEvaluationDataBase>&);
+template std::shared_ptr<GeometryPair::GeometryPairBase>
+GeometryPair::geometry_pair_line_to_volume_factory<double, GeometryPair::t_line2,
+    GeometryPair::t_tet10>(const Core::Elements::Element*, const Core::Elements::Element*,
+    const std::shared_ptr<GeometryEvaluationDataBase>&);
+template std::shared_ptr<GeometryPair::GeometryPairBase>
+GeometryPair::geometry_pair_line_to_volume_factory<double, GeometryPair::t_line2,
+    GeometryPair::t_nurbs27>(const Core::Elements::Element*, const Core::Elements::Element*,
+    const std::shared_ptr<GeometryEvaluationDataBase>&);
+template std::shared_ptr<GeometryPair::GeometryPairBase>
+GeometryPair::geometry_pair_line_to_volume_factory<double, GeometryPair::t_line2,
+    GeometryPair::t_wedge6>(const Core::Elements::Element*, const Core::Elements::Element*,
+    const std::shared_ptr<GeometryEvaluationDataBase>&);
+
+template std::shared_ptr<GeometryPair::GeometryPairBase>
 GeometryPair::geometry_pair_line_to_volume_factory<double, GeometryPair::t_hermite,
     GeometryPair::t_hex8>(const Core::Elements::Element*, const Core::Elements::Element*,
     const std::shared_ptr<GeometryEvaluationDataBase>&);

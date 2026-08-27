@@ -406,14 +406,16 @@ BeamInteraction::create_beam_to_solid_volume_pair_mortar(const Core::FE::CellTyp
     switch (shape_beam)
     {
       case Core::FE::CellType::line2:
-        FOUR_C_THROW(
-            "Beam-solid volume coupling currently only supports beams with a hermite centerline.");
+        return create_beam_to_solid_volume_pair_shape<GeometryPair::t_line2, BtsClass,
+            BtsMortarTemplateArguments...>(shape_solid);
       case Core::FE::CellType::line3:
         FOUR_C_THROW(
-            "Beam-solid volume coupling currently only supports beams with a hermite centerline.");
+            "Beam-solid volume coupling currently only supports beams with a hermite or line2 "
+            "centerline.");
       case Core::FE::CellType::line4:
         FOUR_C_THROW(
-            "Beam-solid volume coupling currently only supports beams with a hermite centerline.");
+            "Beam-solid volume coupling currently only supports beams with a hermite or line2 "
+            "centerline.");
       default:
         FOUR_C_THROW("Currently only the cell types line2, line3 and line4 are supported.");
     }

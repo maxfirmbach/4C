@@ -440,6 +440,13 @@ namespace BeamInteraction
 {
   using namespace GeometryPair;
 
+  template class BeamToSolidVolumeMeshtyingPairGaussPoint<t_line2, t_hex8>;
+  template class BeamToSolidVolumeMeshtyingPairGaussPoint<t_line2, t_hex20>;
+  template class BeamToSolidVolumeMeshtyingPairGaussPoint<t_line2, t_hex27>;
+  template class BeamToSolidVolumeMeshtyingPairGaussPoint<t_line2, t_tet4>;
+  template class BeamToSolidVolumeMeshtyingPairGaussPoint<t_line2, t_tet10>;
+  template class BeamToSolidVolumeMeshtyingPairGaussPoint<t_line2, t_nurbs27>;
+
   template class BeamToSolidVolumeMeshtyingPairGaussPoint<t_hermite, t_hex8>;
   template class BeamToSolidVolumeMeshtyingPairGaussPoint<t_hermite, t_hex20>;
   template class BeamToSolidVolumeMeshtyingPairGaussPoint<t_hermite, t_hex27>;
