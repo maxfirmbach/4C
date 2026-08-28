@@ -89,7 +89,7 @@ int Discret::Elements::ArteryEleCalcPresBased<distype>::evaluate_service(Artery*
   switch (action)
   {
     case Arteries::calc_flow_pressurebased:
-      evaluate_flow(ele, discretization, la, elevec1, mat);
+      evaluate_flow(ele, discretization, la, elevec1, elevec2, mat);
       break;
     default:
       FOUR_C_THROW("Unknown type of action {} for Artery (PressureBased formulation)", action);
@@ -203,7 +203,8 @@ void Discret::Elements::ArteryEleCalcPresBased<distype>::sysmat(Artery* ele,
 template <Core::FE::CellType distype>
 void Discret::Elements::ArteryEleCalcPresBased<distype>::evaluate_flow(Artery* ele,
     Core::FE::Discretization& discretization, Core::Elements::LocationArray& la,
-    Core::LinAlg::SerialDenseVector& flowVec, std::shared_ptr<const Core::Mat::Material> material)
+    Core::LinAlg::SerialDenseVector& flowVec, Core::LinAlg::SerialDenseVector& ele_length,
+    std::shared_ptr<const Core::Mat::Material> material)
 {
   // get pressure
   std::shared_ptr<const Core::LinAlg::Vector<double>> pressnp =
@@ -216,12 +217,14 @@ void Discret::Elements::ArteryEleCalcPresBased<distype>::evaluate_flow(Artery* e
 
   // calculate the element length
   const double L = calculate_ele_length(ele, discretization, la);
+  FOUR_C_ASSERT(ele_length.length() == 1, "ele_length must be of size 1");
+  ele_length(0) = L;
 
   // check here, if we really have an artery !!
   if (material->material_type() != Core::Materials::m_cnst_art)
     FOUR_C_THROW("Wrong material type for artery");
 
-  // cast the material to artery material material
+  // cast the material to artery material
   const Mat::Cnst1dArt* actmat = static_cast<const Mat::Cnst1dArt*>(material.get());
 
   // Read in diameter
@@ -233,8 +236,6 @@ void Discret::Elements::ArteryEleCalcPresBased<distype>::evaluate_flow(Artery* e
 
   // TODO: this works only for line 2 elements
   flowVec(0) = -hag_pois * (mypress(1) - mypress(0)) / L;
-
-  return;
 }
 
 /*----------------------------------------------------------------------*

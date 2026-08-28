@@ -9,6 +9,8 @@ PROBLEM TYPE:
 STRUCTURAL DYNAMIC:
   DYNAMICTYPE: "OneStepTheta"
   LINEAR_SOLVER: 1
+IO/RUNTIME VTK OUTPUT:
+  OUTPUT_DATA_FORMAT: ascii
 porofluid_elasticity_dynamic:
   total_simulation_time: 0.5
   time_integration:

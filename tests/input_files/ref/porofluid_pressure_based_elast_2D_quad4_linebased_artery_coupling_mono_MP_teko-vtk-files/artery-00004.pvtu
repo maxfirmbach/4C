@@ -12,11 +12,10 @@
     </PPointData>
     <PCellData>
       <PDataArray type="Float64" Name="Owner" format="ascii"/>
+      <PDataArray type="Float64" Name="ele_length" format="ascii"/>
       <PDataArray type="Float64" Name="ele_radius" format="ascii"/>
       <PDataArray type="Float64" Name="ele_volflow" format="ascii"/>
     </PCellData>
-    <Piece Source="artery-00024-0.vtu"/>
-    <Piece Source="artery-00024-1.vtu"/>
-    <Piece Source="artery-00024-2.vtu"/>
+    <Piece Source="artery-00004-0.vtu"/>
   </PUnstructuredGrid>
 </VTKFile>

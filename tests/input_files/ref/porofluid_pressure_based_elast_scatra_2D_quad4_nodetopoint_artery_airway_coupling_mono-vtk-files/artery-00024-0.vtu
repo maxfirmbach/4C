@@ -37,11 +37,11 @@
   <PointData>
         <DataArray type="Float64" Name="pressure" format="ascii">
 1.300000000000000e+00
-1.275205783587330e+00
-1.275205783587330e+00
-1.243599235259219e+00
-1.275205783587330e+00
-1.243599235259218e+00
+1.275205783587201e+00
+1.275205783587201e+00
+1.243599235258923e+00
+1.275205783587201e+00
+1.243599235258927e+00
         </DataArray>
   </PointData>
   <CellData>
@@ -50,15 +50,20 @@
 0.000000000000000e+00
 0.000000000000000e+00
         </DataArray>
+        <DataArray type="Float64" Name="ele_length" format="ascii">
+9.999999999999998e-02
+2.549509756796393e-01
+2.549509756796393e-01
+        </DataArray>
         <DataArray type="Float64" Name="ele_radius" format="ascii">
 2.500000000000000e-02
 2.500000000000000e-02
 2.500000000000000e-02
         </DataArray>
         <DataArray type="Float64" Name="ele_volflow" format="ascii">
-9.508462906928656e-03
-4.754231453464181e-03
-4.754231453464448e-03
+9.508462906978045e-03
+4.754231453489330e-03
+4.754231453488762e-03
         </DataArray>
       </CellData>
 

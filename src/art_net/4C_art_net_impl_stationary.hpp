@@ -98,8 +98,8 @@ namespace Arteries
     //! get element radius
     void get_radius();
 
-    //! calculate element volumetric flow
-    void reconstruct_flow();
+    //! calculate element volumetric flow and element length
+    void compute_element_flow_and_length();
 
     //! set the initial field on the artery discretization
     void set_initial_field(const ArtDyn::InitialField init,  //!< type of initial field
@@ -156,6 +156,8 @@ namespace Arteries
     std::shared_ptr<Core::LinAlg::Vector<double>> neumann_loads_;
     //! volumetric flow (for output)
     std::shared_ptr<Core::LinAlg::Vector<double>> ele_volflow_;
+    //! element length (for output)
+    std::shared_ptr<Core::LinAlg::Vector<double>> ele_length_;
     //! element radius (for output)
     std::shared_ptr<Core::LinAlg::Vector<double>> ele_radius_;
     /// underlying scatra problem

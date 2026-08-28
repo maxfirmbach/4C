@@ -33,16 +33,6 @@ FOUR_C_NAMESPACE_OPEN
 
 
 
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-/*----------------------------------------------------------------------*
- |  Constructor (public)                                kremheller 03/18|
- *----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-
 Arteries::ArtNetImplStationary::ArtNetImplStationary(
     std::shared_ptr<Core::FE::Discretization> actdis, const int linsolvernumber,
     const Teuchos::ParameterList& probparams, const Teuchos::ParameterList& artparams,
@@ -68,13 +58,6 @@ Arteries::ArtNetImplStationary::ArtNetImplStationary(
 
 
 
-/*----------------------------------------------------------------------*
- | Initialize the time integration.                                     |
- |                                                      kremheller 03/18|
- *----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
 void Arteries::ArtNetImplStationary::init(const Teuchos::ParameterList& globaltimeparams,
     const Teuchos::ParameterList& arteryparams, const std::string& scatra_disname)
 {
@@ -136,6 +119,9 @@ void Arteries::ArtNetImplStationary::init(const Teuchos::ParameterList& globalti
   // for output of volumetric flow
   ele_volflow_ = std::make_shared<Core::LinAlg::Vector<double>>(*discret_->element_row_map());
 
+  // for output of element length
+  ele_length_ = std::make_shared<Core::LinAlg::Vector<double>>(*discret_->element_row_map());
+
   // for output of element radius
   ele_radius_ = std::make_shared<Core::LinAlg::Vector<double>>(*discret_->element_row_map());
 
@@ -172,13 +158,6 @@ void Arteries::ArtNetImplStationary::init(const Teuchos::ParameterList& globalti
 
 
 
-/*----------------------------------------------------------------------*
- | (Linear) Solve.                                                      |
- |                                                      kremheller 03/18|
- *----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
 void Arteries::ArtNetImplStationary::solve(
     std::shared_ptr<Teuchos::ParameterList> CouplingTo3DParams)
 {
@@ -199,13 +178,6 @@ void Arteries::ArtNetImplStationary::solve(
 }
 
 
-/*----------------------------------------------------------------------*
- | (Linear) Solve for ScaTra.                                           |
- |                                                      kremheller 03/18|
- *----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
 void Arteries::ArtNetImplStationary::solve_scatra()
 {
   // print user info
@@ -234,13 +206,6 @@ void Arteries::ArtNetImplStationary::solve_scatra()
   scatra_->scatra_field()->solve();
 }
 
-/*----------------------------------------------------------------------*
- | Prepare Linear Solve (Apply DBC).                                    |
- |                                                      kremheller 03/18|
- *----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
 void Arteries::ArtNetImplStationary::prepare_linear_solve()
 {
   // apply map: rhs = pressurenp_
@@ -248,16 +213,7 @@ void Arteries::ArtNetImplStationary::prepare_linear_solve()
       *sysmat_, *pressureincnp_, *rhs_, *zeros_, *(dbcmaps_->cond_map()));
 }
 
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-/*----------------------------------------------------------------------*
- | call elements to calculate system matrix/rhs and assemble            |
- |                                                     kremheller 03/18 |
- *----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
+
 void Arteries::ArtNetImplStationary::assemble_mat_and_rhs()
 {
   dtele_ = 0.0;
@@ -298,16 +254,7 @@ void Arteries::ArtNetImplStationary::assemble_mat_and_rhs()
 
 }  // ArtNetExplicitTimeInt::assemble_mat_and_rhs
 
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-/*----------------------------------------------------------------------*
- | call linear solver                                                   |
- |                                                     kremheller 03/18 |
- *----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
+
 void Arteries::ArtNetImplStationary::linear_solve()
 {
   // time measurement: solver
@@ -331,15 +278,7 @@ void Arteries::ArtNetImplStationary::linear_solve()
 
 }  // ArtNetImplStationary::linear_solve
 
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-/*----------------------------------------------------------------------*
- | Prepare time step (Apply DBC and Neumann)            kremheller 03/18|
- *----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
+
 void Arteries::ArtNetImplStationary::prepare_time_step()
 {
   // call base class
@@ -352,9 +291,6 @@ void Arteries::ArtNetImplStationary::prepare_time_step()
   apply_neumann_bc(*neumann_loads_);
 }
 
-/*----------------------------------------------------------------------*
- | evaluate Dirichlet boundary conditions at t_{n+1}   kremheller 03/18 |
- *----------------------------------------------------------------------*/
 void Arteries::ArtNetImplStationary::apply_dirichlet_bc()
 {
   // time measurement: apply Dirichlet conditions
@@ -373,9 +309,7 @@ void Arteries::ArtNetImplStationary::apply_dirichlet_bc()
   discret_->clear_state();
 }
 
-/*----------------------------------------------------------------------*
- | reset artery diameter of previous time step         kremheller 11/20 |
- *----------------------------------------------------------------------*/
+
 void Arteries::ArtNetImplStationary::reset_artery_diam_previous_time_step()
 {
   // set the diameter in material
@@ -394,9 +328,6 @@ void Arteries::ArtNetImplStationary::reset_artery_diam_previous_time_step()
   }
 }
 
-/*----------------------------------------------------------------------*
- | evaluate Neumann boundary conditions                kremheller 03/18 |
- *----------------------------------------------------------------------*/
 void Arteries::ArtNetImplStationary::apply_neumann_bc(Core::LinAlg::Vector<double>& neumann_loads)
 {
   // prepare load vector
@@ -415,25 +346,13 @@ void Arteries::ArtNetImplStationary::apply_neumann_bc(Core::LinAlg::Vector<doubl
   return;
 }  // ArtNetImplStationary::apply_neumann_bc
 
-/*----------------------------------------------------------------------*
- | add actual Neumann loads                            kremheller 03/18 |
- *----------------------------------------------------------------------*/
+
 void Arteries::ArtNetImplStationary::add_neumann_to_residual()
 {
   rhs_->update(1.0, *neumann_loads_, 1.0);
   return;
 }
 
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-/*----------------------------------------------------------------------*
- | current solution becomes most recent solution of next timestep       |
- |                                                      kremheller 03/18|
- *----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
 void Arteries::ArtNetImplStationary::time_update()
 {
   // reset the artery diameter of the previous time step
@@ -448,15 +367,6 @@ void Arteries::ArtNetImplStationary::time_update()
   return;
 }  // ArtNetExplicitTimeInt::TimeUpdate
 
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-/*----------------------------------------------------------------------*
- | prepare the time loop                                kremheller 03/18|
- *----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
 void Arteries::ArtNetImplStationary::prepare_time_loop()
 {
   // call base class
@@ -474,8 +384,6 @@ void Arteries::ArtNetImplStationary::prepare_time_loop()
   return;
 }
 
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
 void Arteries::ArtNetImplStationary::collect_runtime_output_data()
 {
   // write domain decomposition for visualization (only once at step 0!)
@@ -491,15 +399,19 @@ void Arteries::ArtNetImplStationary::collect_runtime_output_data()
   visualization_writer_->append_result_data_vector_with_context(
       *pressurenp_, Core::IO::OutputEntity::dof, {"pressure"});
 
-  // flow
-  reconstruct_flow();
+  // flow and element length
+  compute_element_flow_and_length();
 
   visualization_writer_->append_result_data_vector_with_context(
       *ele_volflow_, Core::IO::OutputEntity::element, {"ele_volflow"});
+
+  //! reduced elements can change their length (following the deformation of the solid) when coupled
+  //! to the porofluid_pressure_based* framework
+  visualization_writer_->append_result_data_vector_with_context(
+      *ele_length_, Core::IO::OutputEntity::element, {"ele_length"});
 }
 
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
+
 void Arteries::ArtNetImplStationary::output_restart() const
 {
   // step number and time (only after that data output is possible)
@@ -510,15 +422,6 @@ void Arteries::ArtNetImplStationary::output_restart() const
   output_.write_vector("ele_radius", ele_radius_, Core::IO::elementvector);
 }
 
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-/*----------------------------------------------------------------------*
- | output of solution vector to binio                   kremheller 03/18|
- *----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
 void Arteries::ArtNetImplStationary::output(
     bool CoupledTo3D, std::shared_ptr<Teuchos::ParameterList> CouplingParams)
 {
@@ -540,15 +443,6 @@ void Arteries::ArtNetImplStationary::output(
   if (step_ % uprestart_ == 0 and step_ != 0) output_restart();
 }
 
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-/*----------------------------------------------------------------------*
- | output of element-based radius                       kremheller 07/19|
- *----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
 void Arteries::ArtNetImplStationary::get_radius()
 {
   // loop over row elements
@@ -566,16 +460,7 @@ void Arteries::ArtNetImplStationary::get_radius()
   }
 }
 
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-/*----------------------------------------------------------------------*
- | output of element volumetric flow                    kremheller 09/19|
- *----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-void Arteries::ArtNetImplStationary::reconstruct_flow()
+void Arteries::ArtNetImplStationary::compute_element_flow_and_length()
 {
   Core::LinAlg::SerialDenseMatrix dummyMat;
   Core::LinAlg::SerialDenseVector dummyVec;
@@ -597,22 +482,17 @@ void Arteries::ArtNetImplStationary::reconstruct_flow()
     Core::Elements::LocationArray la(discret_->num_dof_sets());
     actele->location_vector(*discret_, la);
     Core::LinAlg::SerialDenseVector flowVec(1);
+    Core::LinAlg::SerialDenseVector ele_length(1);
 
-    actele->evaluate(p, *discret_, la, dummyMat, dummyMat, flowVec, dummyVec, dummyVec);
+    actele->evaluate(p, *discret_, la, dummyMat, dummyMat, flowVec, ele_length, dummyVec);
 
-    ele_volflow_->replace_local_value(i, flowVec(0));
+    const auto My_Row = discret_->element_row_map()->lid(actele->id());
+    ele_volflow_->replace_local_value(My_Row, flowVec(0));
+    ele_length_->replace_local_value(My_Row, ele_length(0));
   }
 }
 
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-/*----------------------------------------------------------------------*
- | test results                                         kremheller 03/18|
- *----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
+
 void Arteries::ArtNetImplStationary::test_results()
 {
   std::shared_ptr<Core::Utils::ResultTest> resulttest = create_field_test();
@@ -624,23 +504,12 @@ void Arteries::ArtNetImplStationary::test_results()
   Global::Problem::instance()->test_all(discret_->get_comm());
 }
 
-/*----------------------------------------------------------------------*
- | create result test for this field                   kremheller 03/18 |
- *----------------------------------------------------------------------*/
+
 std::shared_ptr<Core::Utils::ResultTest> Arteries::ArtNetImplStationary::create_field_test()
 {
   return std::make_shared<Arteries::ArteryResultTest>(*(this));
 }
 
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-/*----------------------------------------------------------------------*
- | read_restart (public)                                 kremheller 03/18|
- -----------------------------------------------------------------------*/
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
-//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>//
 void Arteries::ArtNetImplStationary::read_restart(int step, bool coupledTo3D)
 {
   coupledTo3D_ = coupledTo3D;
@@ -684,9 +553,7 @@ void Arteries::ArtNetImplStationary::read_restart(int step, bool coupledTo3D)
     scatra_->scatra_field()->read_restart(step);
 }
 
-/*----------------------------------------------------------------------*
- |  set initial field for pressure                     kremheller 04/18 |
- *----------------------------------------------------------------------*/
+
 void Arteries::ArtNetImplStationary::set_initial_field(
     const ArtDyn::InitialField init, const int startfuncno)
 {
