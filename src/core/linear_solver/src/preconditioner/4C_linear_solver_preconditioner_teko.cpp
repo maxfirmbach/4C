@@ -133,33 +133,37 @@ void Core::LinearSolver::TekoPreconditioner::setup(
     }
   }
 
-  // setup preconditioner builder and enable relevant packages
-  Stratimikos::LinearSolverBuilder<double> builder;
+  {
+    TEUCHOS_FUNC_TIME_MONITOR("Core::LinAlg::Solver:  1.0)   setup_preconditioner");
 
-  // enable block preconditioning and multigrid
-  Stratimikos::enableMueLu<Scalar, LocalOrdinal, GlobalOrdinal, Node>(builder);
-  Teko::addTekoToStratimikosBuilder(builder);
+    // setup preconditioner builder and enable relevant packages
+    Stratimikos::LinearSolverBuilder<double> builder;
 
-  // add special in-house block preconditioning methods
-  Teuchos::RCP<Teko::Cloneable> clone = Teuchos::make_rcp<Teko::AutoClone<LU2x2SpaiStrategy>>();
-  Teko::LU2x2PreconditionerFactory::addStrategy("Spai Strategy", clone);
+    // enable block preconditioning and multigrid
+    Stratimikos::enableMueLu<Scalar, LocalOrdinal, GlobalOrdinal, Node>(builder);
+    Teko::addTekoToStratimikosBuilder(builder);
 
-  // get preconditioner parameter list
-  Teuchos::RCP<Teuchos::ParameterList> stratimikos_params =
-      Teuchos::make_rcp<Teuchos::ParameterList>(*builder.getValidParameters());
-  Teuchos::ParameterList& tekoList =
-      stratimikos_params->sublist("Preconditioner Types").sublist("Teko");
-  tekoList.setParameters(tekoParams);
-  builder.setParameterList(stratimikos_params);
+    // add special in-house block preconditioning methods
+    Teuchos::RCP<Teko::Cloneable> clone = Teuchos::make_rcp<Teko::AutoClone<LU2x2SpaiStrategy>>();
+    Teko::LU2x2PreconditionerFactory::addStrategy("Spai Strategy", clone);
 
-  // construct preconditioning operator
-  Teuchos::RCP<Thyra::PreconditionerFactoryBase<double>> precFactory =
-      builder.createPreconditioningStrategy("Teko");
-  Teuchos::RCP<Thyra::PreconditionerBase<double>> prec =
-      Thyra::prec<double>(*precFactory, pmatrix_);
-  Teko::LinearOp inverseOp = prec->getUnspecifiedPrecOp();
+    // get preconditioner parameter list
+    Teuchos::RCP<Teuchos::ParameterList> stratimikos_params =
+        Teuchos::make_rcp<Teuchos::ParameterList>(*builder.getValidParameters());
+    Teuchos::ParameterList& tekoList =
+        stratimikos_params->sublist("Preconditioner Types").sublist("Teko");
+    tekoList.setParameters(tekoParams);
+    builder.setParameterList(stratimikos_params);
 
-  p_ = Utils::get_epetra_inverse_operator_from_thyra(inverseOp);
+    // construct preconditioning operator
+    Teuchos::RCP<Thyra::PreconditionerFactoryBase<double>> precFactory =
+        builder.createPreconditioningStrategy("Teko");
+    Teuchos::RCP<Thyra::PreconditionerBase<double>> prec =
+        Thyra::prec<double>(*precFactory, pmatrix_);
+    Teko::LinearOp inverseOp = prec->getUnspecifiedPrecOp();
+
+    p_ = Utils::get_epetra_inverse_operator_from_thyra(inverseOp);
+  }
 }
 
 //----------------------------------------------------------------------------------
