@@ -297,6 +297,26 @@ namespace BeamInteraction
 {
   using namespace GeometryPair;
 
+  template class BeamToSolidVolumeMeshtyingPairBase<double, t_line2, t_hex8>;
+  template class BeamToSolidVolumeMeshtyingPairBase<double, t_line2, t_hex20>;
+  template class BeamToSolidVolumeMeshtyingPairBase<double, t_line2, t_hex27>;
+  template class BeamToSolidVolumeMeshtyingPairBase<double, t_line2, t_tet4>;
+  template class BeamToSolidVolumeMeshtyingPairBase<double, t_line2, t_tet10>;
+  template class BeamToSolidVolumeMeshtyingPairBase<double, t_line2, t_nurbs27>;
+
+  template class BeamToSolidVolumeMeshtyingPairBase<line_to_volume_scalar_type<t_line2, t_hex8>,
+      t_line2, t_hex8>;
+  template class BeamToSolidVolumeMeshtyingPairBase<line_to_volume_scalar_type<t_line2, t_hex20>,
+      t_line2, t_hex20>;
+  template class BeamToSolidVolumeMeshtyingPairBase<line_to_volume_scalar_type<t_line2, t_hex27>,
+      t_line2, t_hex27>;
+  template class BeamToSolidVolumeMeshtyingPairBase<line_to_volume_scalar_type<t_line2, t_tet4>,
+      t_line2, t_tet4>;
+  template class BeamToSolidVolumeMeshtyingPairBase<line_to_volume_scalar_type<t_line2, t_tet10>,
+      t_line2, t_tet10>;
+  template class BeamToSolidVolumeMeshtyingPairBase<line_to_volume_scalar_type<t_line2, t_nurbs27>,
+      t_line2, t_nurbs27>;
+
   template class BeamToSolidVolumeMeshtyingPairBase<double, t_hermite, t_hex8>;
   template class BeamToSolidVolumeMeshtyingPairBase<double, t_hermite, t_hex20>;
   template class BeamToSolidVolumeMeshtyingPairBase<double, t_hermite, t_hex27>;

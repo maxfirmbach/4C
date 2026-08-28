@@ -57,6 +57,21 @@ void GeometryPair::GeometryPairLineToVolumeSegmentation<ScalarType, Line, Volume
 /**
  * Explicit template initialization of template class.
  */
+template class GeometryPair::GeometryPairLineToVolumeSegmentation<double, GeometryPair::t_line2,
+    GeometryPair::t_hex8>;
+template class GeometryPair::GeometryPairLineToVolumeSegmentation<double, GeometryPair::t_line2,
+    GeometryPair::t_hex20>;
+template class GeometryPair::GeometryPairLineToVolumeSegmentation<double, GeometryPair::t_line2,
+    GeometryPair::t_hex27>;
+template class GeometryPair::GeometryPairLineToVolumeSegmentation<double, GeometryPair::t_line2,
+    GeometryPair::t_tet4>;
+template class GeometryPair::GeometryPairLineToVolumeSegmentation<double, GeometryPair::t_line2,
+    GeometryPair::t_tet10>;
+template class GeometryPair::GeometryPairLineToVolumeSegmentation<double, GeometryPair::t_line2,
+    GeometryPair::t_nurbs27>;
+template class GeometryPair::GeometryPairLineToVolumeSegmentation<double, GeometryPair::t_line2,
+    GeometryPair::t_wedge6>;
+
 template class GeometryPair::GeometryPairLineToVolumeSegmentation<double, GeometryPair::t_hermite,
     GeometryPair::t_hex8>;
 template class GeometryPair::GeometryPairLineToVolumeSegmentation<double, GeometryPair::t_hermite,

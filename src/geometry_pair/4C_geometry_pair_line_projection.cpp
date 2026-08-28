@@ -540,6 +540,13 @@ namespace GeometryPair
   template class LineTo3DGaussPointProjection<          \
       GeometryPairLineToVolumeGaussPointProjection<a, b, c>>;
 
+  initialize_template_volume_gauss_point(double, t_line2, t_hex8);
+  initialize_template_volume_gauss_point(double, t_line2, t_hex20);
+  initialize_template_volume_gauss_point(double, t_line2, t_hex27);
+  initialize_template_volume_gauss_point(double, t_line2, t_tet4);
+  initialize_template_volume_gauss_point(double, t_line2, t_tet10);
+  initialize_template_volume_gauss_point(double, t_line2, t_nurbs27);
+  initialize_template_volume_gauss_point(double, t_line2, t_wedge6);
 
   initialize_template_volume_gauss_point(double, t_hermite, t_hex8);
   initialize_template_volume_gauss_point(double, t_hermite, t_hex20);
@@ -552,6 +559,14 @@ namespace GeometryPair
   // Define line-to-volume segmentation pairs.
 #define initialize_template_volume_segmentation(a, b, c) \
   template class LineTo3DSegmentation<GeometryPairLineToVolumeSegmentation<a, b, c>>;
+
+  initialize_template_volume_segmentation(double, t_line2, t_hex8);
+  initialize_template_volume_segmentation(double, t_line2, t_hex20);
+  initialize_template_volume_segmentation(double, t_line2, t_hex27);
+  initialize_template_volume_segmentation(double, t_line2, t_tet4);
+  initialize_template_volume_segmentation(double, t_line2, t_tet10);
+  initialize_template_volume_segmentation(double, t_line2, t_nurbs27);
+  initialize_template_volume_segmentation(double, t_line2, t_wedge6);
 
   initialize_template_volume_segmentation(double, t_hermite, t_hex8);
   initialize_template_volume_segmentation(double, t_hermite, t_hex20);
