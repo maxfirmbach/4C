@@ -13,12 +13,19 @@
 
 #include "4C_config.hpp"
 
+#include "4C_fem_discretization.hpp"
 #include "4C_linalg_map.hpp"
 #include "4C_linalg_sparsematrix.hpp"
 #include "4C_linalg_vector.hpp"
+#include "4C_rebalance.hpp"
 #include "4C_reduced_lung_airways.hpp"
+#include "4C_reduced_lung_helpers.hpp"
 #include "4C_reduced_lung_terminal_unit.hpp"
 
+#include <mpi.h>
+
+#include <array>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -26,6 +33,56 @@ FOUR_C_NAMESPACE_OPEN
 
 namespace ReducedLung::TestUtils
 {
+  /**
+   * Build a line2 discretization from nodal coordinates and connectivity, using the same routine
+   * as the production code. Nodes and elements get 0-based ids in the order they are passed;
+   * @p element_nodes is the connectivity [node_in, node_out] referring to those node ids.
+   */
+  inline std::unique_ptr<Core::FE::Discretization> make_line2_discretization(
+      const std::string& name, const std::vector<std::array<double, 3>>& node_coordinates,
+      const std::vector<std::array<int, 2>>& element_nodes)
+  {
+    auto discretization = std::make_unique<Core::FE::Discretization>(name, MPI_COMM_WORLD, 3);
+    const Core::Rebalance::RebalanceParameters rebalance_parameters{};
+    build_discretization_from_nodes_and_elements(
+        *discretization, node_coordinates, element_nodes, rebalance_parameters);
+    discretization->fill_complete(Core::FE::OptionsFillComplete{
+        .assign_degrees_of_freedom = true,
+        .init_elements = true,
+        .do_boundary_conditions = false,
+    });
+
+    return discretization;
+  }
+
+  /**
+   * Build a straight line discretization along the x-axis with 0-based node ids.
+   * The discretization is bifurcation-free consisting of @p num_elements line2 elements of unit
+   * length.
+   */
+  inline std::unique_ptr<Core::FE::Discretization> make_chain_discretization(
+      const std::string& name, const int num_elements)
+  {
+    std::vector<std::array<double, 3>> node_coordinates;
+    std::vector<std::array<int, 2>> element_nodes;
+    for (int node_id = 0; node_id <= num_elements; ++node_id)
+    {
+      node_coordinates.push_back({static_cast<double>(node_id), 0.0, 0.0});
+      if (node_id > 0) element_nodes.push_back({node_id - 1, node_id});
+    }
+    return make_line2_discretization(name, node_coordinates, element_nodes);
+  }
+
+  //! A single element splitting into two elements at its outlet node.
+  inline std::unique_ptr<Core::FE::Discretization> make_bifurcation_discretization(
+      const std::string& name)
+  {
+    const std::vector<std::array<double, 3>> node_coordinates{
+        {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {2.0, 1.0, 0.0}, {2.0, -1.0, 0.0}};
+    const std::vector<std::array<int, 2>> element_nodes{{0, 1}, {1, 2}, {1, 3}};
+    return make_line2_discretization(name, node_coordinates, element_nodes);
+  }
+
   // Generalized helper to check a Jacobian column against a central finite-difference
   // approximation of the residual. Works for both TerminalUnitModel and AirwayModel as long
   // as the model exposes `data`, `residual_evaluator` and the data structure

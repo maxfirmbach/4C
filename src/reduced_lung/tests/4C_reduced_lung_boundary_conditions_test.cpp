@@ -13,7 +13,7 @@
 #include "4C_linalg_map.hpp"
 #include "4C_linalg_sparsematrix.hpp"
 #include "4C_linalg_vector.hpp"
-#include "4C_red_airways_elementbase.hpp"
+#include "4C_reduced_lung_test_utils_test.hpp"
 #include "4C_unittest_utils_assertions_test.hpp"
 #include "4C_utils_exceptions.hpp"
 #include "4C_utils_function_manager.hpp"
@@ -35,29 +35,6 @@ namespace
   using namespace FourC;
   using namespace FourC::ReducedLung;
   using namespace FourC::ReducedLung::BoundaryConditions;
-
-  std::unique_ptr<Core::FE::Discretization> make_airway_discretization(
-      const std::vector<int>& node_ids, const std::vector<std::array<int, 2>>& element_nodes)
-  {
-    auto dis =
-        std::make_unique<Core::FE::Discretization>("boundary_conditions_test", MPI_COMM_WORLD, 3);
-
-    for (int node_id : node_ids)
-    {
-      std::array<double, 3> coords{static_cast<double>(node_id), 0.0, 0.0};
-      dis->add_node(coords, node_id, nullptr);
-    }
-
-    for (size_t i = 0; i < element_nodes.size(); ++i)
-    {
-      auto ele = std::make_shared<Discret::Elements::RedAirway>(static_cast<int>(i), 0);
-      ele->set_node_ids(2, element_nodes[i].data());
-      dis->add_element(ele);
-    }
-
-    dis->fill_complete(Core::FE::OptionsFillComplete::none());
-    return dis;
-  }
 
   using InputBc = ReducedLungParameters::BoundaryConditions;
 
@@ -199,7 +176,8 @@ namespace
   BoundaryConditionFixture make_fixture()
   {
     BoundaryConditionFixture fixture;
-    fixture.discretization = make_airway_discretization({0, 1, 2}, {{0, 1}, {1, 2}});
+    fixture.discretization =
+        ReducedLung::TestUtils::make_chain_discretization("boundary_conditions_test", 2);
     fixture.set_bc_input(make_constant_parameters());
     fixture.ele_ids_per_node = {{0, {0}}, {1, {0, 1}}, {2, {1}}};
     fixture.global_dof_per_ele = {{0, 3}, {1, 3}};
