@@ -13,6 +13,7 @@
 #include "4C_io_input_field.hpp"
 #include "4C_linalg_map.hpp"
 #include "4C_rebalance.hpp"
+#include "4C_reduced_lung_test_utils_test.hpp"
 
 #include <mpi.h>
 
@@ -125,45 +126,6 @@ namespace
         Core::IO::InputField<double>(std::unordered_map<int, double>{{2, 0.0}});
 
     return params;
-  }
-
-  std::unique_ptr<Core::FE::Discretization> make_discretization(
-      const std::vector<std::array<double, 3>>& node_coordinates,
-      const std::vector<std::array<int, 2>>& element_nodes, const char* name)
-  {
-    auto discretization = std::make_unique<Core::FE::Discretization>(name, MPI_COMM_WORLD, 3);
-    Core::Rebalance::RebalanceParameters rebalance_parameters;
-    build_discretization_from_nodes_and_elements(
-        *discretization, node_coordinates, element_nodes, rebalance_parameters);
-    discretization->fill_complete(Core::FE::OptionsFillComplete{
-        .assign_degrees_of_freedom = true,
-        .init_elements = true,
-        .do_boundary_conditions = false,
-    });
-    return discretization;
-  }
-
-  //! A straight chain of @p num_elements line2 elements with unit length along the x-axis.
-  std::unique_ptr<Core::FE::Discretization> make_chain_discretization(
-      const int num_elements, const char* name)
-  {
-    std::vector<std::array<double, 3>> node_coordinates;
-    std::vector<std::array<int, 2>> element_nodes;
-    for (int node_id = 0; node_id <= num_elements; ++node_id)
-    {
-      node_coordinates.push_back({static_cast<double>(node_id), 0.0, 0.0});
-      if (node_id > 0) element_nodes.push_back({node_id - 1, node_id});
-    }
-    return make_discretization(node_coordinates, element_nodes, name);
-  }
-
-  //! A single element splitting into two elements at its outlet node.
-  std::unique_ptr<Core::FE::Discretization> make_bifurcation_discretization(const char* name)
-  {
-    const std::vector<std::array<double, 3>> node_coordinates{
-        {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {2.0, 1.0, 0.0}, {2.0, -1.0, 0.0}};
-    const std::vector<std::array<int, 2>> element_nodes{{0, 1}, {1, 2}, {1, 3}};
-    return make_discretization(node_coordinates, element_nodes, name);
   }
 
   TEST(ReducedLungHelpersTests, CreateGlobalDofMapsBuildsOffsetsInElementOrder)
@@ -308,7 +270,8 @@ namespace
   TEST(ReducedLungHelpersTests, CreateLocalElementModelsBuildsModelContainers)
   {
     const auto params = make_setup_model_parameters();
-    auto discretization = make_chain_discretization(3, "local_element_models_test");
+    auto discretization =
+        ReducedLung::TestUtils::make_chain_discretization("local_element_models_test", 3);
 
     Airways::AirwayContainer airways;
     TerminalUnits::TerminalUnitContainer terminal_units;
@@ -355,7 +318,8 @@ namespace
   TEST(ReducedLungHelpersTests, CreateLocalElementModelsUsesSelectedModelStateCount)
   {
     const auto params = make_revisited_airway_model_parameters();
-    auto discretization = make_chain_discretization(4, "revisited_airway_model_test");
+    auto discretization =
+        ReducedLung::TestUtils::make_chain_discretization("revisited_airway_model_test", 4);
 
     Airways::AirwayContainer airways;
     TerminalUnits::TerminalUnitContainer terminal_units;
@@ -377,7 +341,8 @@ namespace
 
   TEST(ReducedLungHelpersTests, CreateGlobalEleIdsPerNodeCollectsAdjacency)
   {
-    auto discretization = make_bifurcation_discretization("global_ele_ids_test");
+    auto discretization =
+        ReducedLung::TestUtils::make_bifurcation_discretization("global_ele_ids_test");
     auto global_ele_ids_per_node = create_global_ele_ids_per_node(*discretization, MPI_COMM_WORLD);
 
     ASSERT_EQ(global_ele_ids_per_node.size(), 4u);

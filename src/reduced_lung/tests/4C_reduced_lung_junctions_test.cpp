@@ -13,7 +13,7 @@
 #include "4C_linalg_map.hpp"
 #include "4C_linalg_sparsematrix.hpp"
 #include "4C_linalg_vector.hpp"
-#include "4C_red_airways_elementbase.hpp"
+#include "4C_reduced_lung_test_utils_test.hpp"
 #include "4C_unittest_utils_assertions_test.hpp"
 #include "4C_utils_exceptions.hpp"
 
@@ -53,28 +53,6 @@ namespace
       }
       EXPECT_TRUE(found) << "Missing column " << col << " in row " << row;
     }
-  }
-
-  std::unique_ptr<Core::FE::Discretization> make_airway_discretization(
-      const std::vector<int>& node_ids, const std::vector<std::array<int, 2>>& element_nodes)
-  {
-    auto dis = std::make_unique<Core::FE::Discretization>("junctions_test", MPI_COMM_WORLD, 3);
-
-    for (int node_id : node_ids)
-    {
-      std::array<double, 3> coords{static_cast<double>(node_id), 0.0, 0.0};
-      dis->add_node(coords, node_id, nullptr);
-    }
-
-    for (size_t i = 0; i < element_nodes.size(); ++i)
-    {
-      auto ele = std::make_shared<Discret::Elements::RedAirway>(static_cast<int>(i), 0);
-      ele->set_node_ids(2, element_nodes[i].data());
-      dis->add_element(ele);
-    }
-
-    dis->fill_complete(Core::FE::OptionsFillComplete::none());
-    return dis;
   }
 
   TEST(JunctionsTests, ConnectionResidualAssembly)
@@ -226,9 +204,9 @@ namespace
       GTEST_SKIP() << "Junction creation tests require a serial communicator.";
     }
 
-    auto dis = make_airway_discretization({1, 2, 3}, {{1, 2}, {2, 3}});
+    auto dis = ReducedLung::TestUtils::make_chain_discretization("junctions_test", 2);
 
-    std::map<int, std::vector<int>> ele_ids_per_node{{1, {0}}, {2, {0, 1}}, {3, {1}}};
+    std::map<int, std::vector<int>> ele_ids_per_node{{0, {0}}, {1, {0, 1}}, {2, {1}}};
     std::map<int, int> global_dof_per_ele{{0, 3}, {1, 3}};
     std::map<int, int> first_global_dof_of_ele{{0, 0}, {1, 3}};
 
@@ -256,9 +234,9 @@ namespace
       GTEST_SKIP() << "Junction creation tests require a serial communicator.";
     }
 
-    auto dis = make_airway_discretization({1, 2, 3, 4}, {{1, 2}, {2, 3}, {2, 4}});
+    auto dis = ReducedLung::TestUtils::make_bifurcation_discretization("junctions_test");
 
-    std::map<int, std::vector<int>> ele_ids_per_node{{1, {0}}, {2, {0, 1, 2}}, {3, {1}}, {4, {2}}};
+    std::map<int, std::vector<int>> ele_ids_per_node{{0, {0}}, {1, {0, 1, 2}}, {2, {1}}, {3, {2}}};
     std::map<int, int> global_dof_per_ele{{0, 3}, {1, 3}, {2, 3}};
     std::map<int, int> first_global_dof_of_ele{{0, 0}, {1, 3}, {2, 6}};
 
@@ -287,9 +265,9 @@ namespace
       GTEST_SKIP() << "Junction creation tests require a serial communicator.";
     }
 
-    auto dis = make_airway_discretization({1, 2, 3}, {{1, 2}, {2, 3}});
+    auto dis = ReducedLung::TestUtils::make_chain_discretization("junctions_test", 2);
 
-    std::map<int, std::vector<int>> ele_ids_per_node{{1, {0}}, {3, {1}}};
+    std::map<int, std::vector<int>> ele_ids_per_node{{0, {0}}, {2, {1}}};
     std::map<int, int> global_dof_per_ele{{0, 3}, {1, 3}};
     std::map<int, int> first_global_dof_of_ele{{0, 0}, {1, 3}};
 
@@ -310,9 +288,10 @@ namespace
       GTEST_SKIP() << "Junction creation tests require a serial communicator.";
     }
 
-    auto dis = make_airway_discretization({1, 2, 3}, {{1, 2}, {3, 2}});
+    auto dis = ReducedLung::TestUtils::make_line2_discretization(
+        "junctions_test", {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {2.0, 0.0, 0.0}}, {{0, 1}, {2, 1}});
 
-    std::map<int, std::vector<int>> ele_ids_per_node{{1, {0}}, {2, {0, 1}}, {3, {1}}};
+    std::map<int, std::vector<int>> ele_ids_per_node{{0, {0}}, {1, {0, 1}}, {2, {1}}};
     std::map<int, int> global_dof_per_ele{{0, 3}, {1, 3}};
     std::map<int, int> first_global_dof_of_ele{{0, 0}, {1, 3}};
 
@@ -333,9 +312,9 @@ namespace
       GTEST_SKIP() << "Junction creation tests require a serial communicator.";
     }
 
-    auto dis = make_airway_discretization({1, 2, 3}, {{1, 2}, {2, 3}});
+    auto dis = ReducedLung::TestUtils::make_chain_discretization("junctions_test", 2);
 
-    std::map<int, std::vector<int>> ele_ids_per_node{{1, {0}}, {2, {0, 1, 2, 3}}, {3, {1}}};
+    std::map<int, std::vector<int>> ele_ids_per_node{{0, {0}}, {1, {0, 1, 2, 3}}, {2, {1}}};
     std::map<int, int> global_dof_per_ele{{0, 3}, {1, 3}};
     std::map<int, int> first_global_dof_of_ele{{0, 0}, {1, 3}};
 
