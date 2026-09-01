@@ -92,12 +92,14 @@ namespace Discret
         \param discretization[in] discretization to which element belongs
         \param la[in]             element location array
         \param flowVec[in,out]    element flow to calculate
+        \param ele_length[in,out] element length to calculate
         \param material[in]       artery material/dimesion
 
         \note  only checked for line2 elements
         */
       void evaluate_flow(Artery* ele, Core::FE::Discretization& discretization,
           Core::Elements::LocationArray& la, Core::LinAlg::SerialDenseVector& flowVec,
+          Core::LinAlg::SerialDenseVector& ele_length,
           std::shared_ptr<const Core::Mat::Material> material);
 
       /*!
