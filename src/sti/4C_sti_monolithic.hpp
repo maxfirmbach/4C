@@ -14,6 +14,8 @@
 #include "4C_coupling_adapter_converter.hpp"
 #include "4C_sti_algorithm.hpp"
 
+#include <string>
+
 FOUR_C_NAMESPACE_OPEN
 
 
@@ -39,8 +41,9 @@ namespace STI
   {
    public:
     //! constructor
-    explicit Monolithic(MPI_Comm comm,         //! communicator
-        const Teuchos::ParameterList& stidyn,  //! parameter list for scatra-thermo interaction
+    explicit Monolithic(Global::Problem& problem,  //! global problem
+        MPI_Comm comm,                             //! communicator
+        const Teuchos::ParameterList& stidyn,      //! parameter list for scatra-thermo interaction
         const Teuchos::ParameterList&
             scatradyn,  //! scalar transport parameter list for scatra and thermo fields
         const Teuchos::ParameterList&
@@ -54,6 +57,7 @@ namespace STI
     //! output matrix to *.csv file for debugging purposes, with global row and column IDs of matrix
     //! components in ascending order across all processors
     static void output_matrix_to_file(
+        const std::string& output_file_name,  //!< base name of output file
         const std::shared_ptr<const Core::LinAlg::SparseOperator>
             sparseoperator,           //!< sparse or block sparse matrix to be output
         const int precision = 16,     //!< output precision
@@ -63,6 +67,7 @@ namespace STI
     //! output vector to *.csv file for debugging purposes, with global IDs of vector components in
     //! ascending order across all processors
     static void output_vector_to_file(
+        const std::string& output_file_name,              //!< base name of output file
         const Core::LinAlg::MultiVector<double>& vector,  //!< vector to be output
         const int precision = 16,                         //!< output precision
         const double tolerance = -1.                      //!< output omission tolerance

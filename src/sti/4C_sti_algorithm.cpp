@@ -9,7 +9,6 @@
 
 #include "4C_coupling_adapter.hpp"
 #include "4C_fem_discretization.hpp"
-#include "4C_global_data.hpp"
 #include "4C_io_control.hpp"
 #include "4C_linalg_utils_sparse_algebra_create.hpp"
 #include "4C_linalg_utils_sparse_algebra_manipulation.hpp"
@@ -22,11 +21,12 @@ FOUR_C_NAMESPACE_OPEN
 
 /*--------------------------------------------------------------------------------*
  *--------------------------------------------------------------------------------*/
-STI::Algorithm::Algorithm(MPI_Comm comm, const Teuchos::ParameterList& stidyn,
-    const Teuchos::ParameterList& scatradyn, const Teuchos::ParameterList& solverparams_scatra,
+STI::Algorithm::Algorithm(Global::Problem& problem, MPI_Comm comm,
+    const Teuchos::ParameterList& stidyn, const Teuchos::ParameterList& scatradyn,
+    const Teuchos::ParameterList& solverparams_scatra,
     const Teuchos::ParameterList& solverparams_thermo)
     :  // instantiate base class
-      AlgorithmBase(*Global::Problem::instance(), comm, scatradyn),
+      AlgorithmBase(problem, comm, scatradyn),
       scatra_(nullptr),
       thermo_(nullptr),
       strategyscatra_(nullptr),
@@ -45,7 +45,7 @@ STI::Algorithm::Algorithm(MPI_Comm comm, const Teuchos::ParameterList& stidyn,
 
   // initialize scatra time integrator
   scatra_ = std::make_shared<Adapter::ScaTraBaseAlgorithm>(
-      *Global::Problem::instance(), *fieldparameters_, *fieldparameters_, solverparams_scatra);
+      problem, *fieldparameters_, *fieldparameters_, solverparams_scatra);
   scatra_->init();
   scatra_->scatra_field()->set_number_of_dof_set_velocity(1);
   scatra_->scatra_field()->set_number_of_dof_set_thermo(2);
@@ -55,8 +55,8 @@ STI::Algorithm::Algorithm(MPI_Comm comm, const Teuchos::ParameterList& stidyn,
   modify_field_parameters_for_thermo_field();
 
   // initialize thermo time integrator
-  thermo_ = std::make_shared<Adapter::ScaTraBaseAlgorithm>(*Global::Problem::instance(),
-      *fieldparameters_, *fieldparameters_, solverparams_thermo, "thermo");
+  thermo_ = std::make_shared<Adapter::ScaTraBaseAlgorithm>(
+      problem, *fieldparameters_, *fieldparameters_, solverparams_thermo, "thermo");
   thermo_->init();
   thermo_->scatra_field()->set_number_of_dof_set_velocity(1);
   thermo_->scatra_field()->set_number_of_dof_set_scatra(2);

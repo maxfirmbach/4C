@@ -25,21 +25,17 @@ FOUR_C_NAMESPACE_OPEN
 /*--------------------------------------------------------------------------------*
  | entry point for simulations of scalar-thermo interaction problems   fang 04/15 |
  *--------------------------------------------------------------------------------*/
-void sti_dyn(const int& restartstep  //! time step for restart
-)
+void sti_dyn(Global::Problem& problem, const int& restartstep)
 {
-  // access global problem
-  Global::Problem* problem = Global::Problem::instance();
-
   // access communicator
-  MPI_Comm comm = problem->get_dis("scatra")->get_comm();
+  MPI_Comm comm = problem.get_dis("scatra")->get_comm();
 
   // access scatra discretization
-  std::shared_ptr<Core::FE::Discretization> scatradis = problem->get_dis("scatra");
+  std::shared_ptr<Core::FE::Discretization> scatradis = problem.get_dis("scatra");
 
   // add dofset for velocity-related quantities to scatra discretization
   std::shared_ptr<Core::DOFSets::DofSetInterface> dofsetaux =
-      std::make_shared<Core::DOFSets::DofSetPredefinedDoFNumber>(problem->n_dim() + 1, 0, 0, true);
+      std::make_shared<Core::DOFSets::DofSetPredefinedDoFNumber>(problem.n_dim() + 1, 0, 0, true);
   if (scatradis->add_dof_set(dofsetaux) != 1)
     FOUR_C_THROW("Scatra discretization has illegal number of dofsets!");
 
@@ -53,11 +49,11 @@ void sti_dyn(const int& restartstep  //! time step for restart
         "cloned from it!");
 
   // access thermo discretization
-  std::shared_ptr<Core::FE::Discretization> thermodis = problem->get_dis("thermo");
+  std::shared_ptr<Core::FE::Discretization> thermodis = problem.get_dis("thermo");
 
   // add dofset for velocity-related quantities to thermo discretization
   dofsetaux =
-      std::make_shared<Core::DOFSets::DofSetPredefinedDoFNumber>(problem->n_dim() + 1, 0, 0, true);
+      std::make_shared<Core::DOFSets::DofSetPredefinedDoFNumber>(problem.n_dim() + 1, 0, 0, true);
   if (thermodis->add_dof_set(dofsetaux) != 1)
     FOUR_C_THROW("Thermo discretization has illegal number of dofsets!");
 
@@ -74,7 +70,7 @@ void sti_dyn(const int& restartstep  //! time step for restart
   // clone thermo discretization from scatra discretization, using clone strategy for scatra-thermo
   // interaction
   Core::FE::clone_discretization<STI::ScatraThermoCloneStrategy>(
-      *scatradis, *thermodis, Global::Problem::instance()->cloning_material_map());
+      *scatradis, *thermodis, problem.cloning_material_map());
   thermodis->fill_complete({
       .assign_degrees_of_freedom = false,
       .init_elements = true,
@@ -108,8 +104,8 @@ void sti_dyn(const int& restartstep  //! time step for restart
   }
 
   // access parameter lists for scatra-thermo interaction and scalar transport field
-  const Teuchos::ParameterList& stidyn = problem->sti_dynamic_params();
-  const Teuchos::ParameterList& scatradyn = problem->scalar_transport_dynamic_params();
+  const Teuchos::ParameterList& stidyn = problem.sti_dynamic_params();
+  const Teuchos::ParameterList& scatradyn = problem.scalar_transport_dynamic_params();
 
   // extract and check ID of linear solver for scatra field
   const int solver_id_scatra = scatradyn.get<int>("LINEAR_SOLVER");
@@ -140,10 +136,9 @@ void sti_dyn(const int& restartstep  //! time step for restart
             "No global linear solver was specified in input file section 'STI "
             "DYNAMIC/MONOLITHIC'!");
 
-      sti_algorithm = std::make_shared<STI::Monolithic>(comm, stidyn, scatradyn,
-          Global::Problem::instance()->solver_params(solver_id),
-          Global::Problem::instance()->solver_params(solver_id_scatra),
-          Global::Problem::instance()->solver_params(solver_id_thermo));
+      sti_algorithm = std::make_shared<STI::Monolithic>(problem, comm, stidyn, scatradyn,
+          problem.solver_params(solver_id), problem.solver_params(solver_id_scatra),
+          problem.solver_params(solver_id_thermo));
 
       break;
     }
@@ -157,9 +152,8 @@ void sti_dyn(const int& restartstep  //! time step for restart
     case STI::CouplingType::twoway_thermotoscatra:
     case STI::CouplingType::twoway_thermotoscatra_aitken:
     {
-      sti_algorithm = std::make_shared<STI::Partitioned>(comm, stidyn, scatradyn,
-          Global::Problem::instance()->solver_params(solver_id_scatra),
-          Global::Problem::instance()->solver_params(solver_id_thermo));
+      sti_algorithm = std::make_shared<STI::Partitioned>(problem, comm, stidyn, scatradyn,
+          problem.solver_params(solver_id_scatra), problem.solver_params(solver_id_thermo));
 
       break;
     }
@@ -182,19 +176,19 @@ void sti_dyn(const int& restartstep  //! time step for restart
   sti_algorithm->time_loop();
 
   // perform result tests
-  problem->add_field_test(
+  problem.add_field_test(
       std::shared_ptr<Core::Utils::ResultTest>(new STI::STIResultTest(sti_algorithm)));
   if (Teuchos::getIntegralValue<STI::ScaTraTimIntType>(
-          problem->sti_dynamic_params(), "SCATRATIMINTTYPE") == STI::ScaTraTimIntType::elch)
-    problem->add_field_test(std::shared_ptr<Core::Utils::ResultTest>(new ScaTra::ElchResultTest(
+          problem.sti_dynamic_params(), "SCATRATIMINTTYPE") == STI::ScaTraTimIntType::elch)
+    problem.add_field_test(std::shared_ptr<Core::Utils::ResultTest>(new ScaTra::ElchResultTest(
         std::dynamic_pointer_cast<ScaTra::ScaTraTimIntElch>(sti_algorithm->scatra_field()))));
   else
     FOUR_C_THROW(
         "Scatra-thermo interaction is currently only available for thermodynamic electrochemistry, "
         "but not for other kinds of thermodynamic scalar transport!");
-  problem->add_field_test(std::shared_ptr<Core::Utils::ResultTest>(
+  problem.add_field_test(std::shared_ptr<Core::Utils::ResultTest>(
       new ScaTra::ScaTraResultTest(sti_algorithm->thermo_field())));
-  problem->test_all(comm);
+  problem.test_all(comm);
 
   return;
 }  // sti_dyn()

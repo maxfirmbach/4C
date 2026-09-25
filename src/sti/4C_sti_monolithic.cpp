@@ -14,7 +14,6 @@
 #include "4C_fem_discretization_utils.hpp"
 #include "4C_fem_general_assemblestrategy.hpp"
 #include "4C_global_data.hpp"
-#include "4C_io_control.hpp"
 #include "4C_linalg_equilibrate.hpp"
 #include "4C_linalg_mapextractor.hpp"
 #include "4C_linalg_utils_densematrix_communication.hpp"
@@ -34,11 +33,11 @@ FOUR_C_NAMESPACE_OPEN
 
 /*--------------------------------------------------------------------------------*
  *--------------------------------------------------------------------------------*/
-STI::Monolithic::Monolithic(MPI_Comm comm, const Teuchos::ParameterList& stidyn,
-    const Teuchos::ParameterList& scatradyn, const Teuchos::ParameterList& solverparams,
-    const Teuchos::ParameterList& solverparams_scatra,
+STI::Monolithic::Monolithic(Global::Problem& problem, MPI_Comm comm,
+    const Teuchos::ParameterList& stidyn, const Teuchos::ParameterList& scatradyn,
+    const Teuchos::ParameterList& solverparams, const Teuchos::ParameterList& solverparams_scatra,
     const Teuchos::ParameterList& solverparams_thermo)
-    : Algorithm(comm, stidyn, scatradyn, solverparams_scatra, solverparams_thermo),
+    : Algorithm(problem, comm, stidyn, scatradyn, solverparams_scatra, solverparams_thermo),
       restol_(fieldparameters_->sublist("NONLINEAR").get<double>("ABSTOLRES")),
       maps_(nullptr),
       condensationthermo_(stidyn.get<bool>("THERMO_CONDENSATION")),
@@ -56,9 +55,8 @@ STI::Monolithic::Monolithic(MPI_Comm comm, const Teuchos::ParameterList& stidyn,
       dtele_(0.),
       dtsolve_(0.),
       solver_(std::make_shared<Core::LinAlg::Solver>(solverparams, comm,
-          Global::Problem::instance()->solver_params_callback(),
-          Teuchos::getIntegralValue<Core::IO::Verbositylevel>(
-              Global::Problem::instance()->io_params(), "VERBOSITY"))),
+          problem.solver_params_callback(),
+          Teuchos::getIntegralValue<Core::IO::Verbositylevel>(problem.io_params(), "VERBOSITY"))),
       invrowsums_(nullptr),
       icoupscatra_(nullptr),
       icoupthermo_(nullptr),
@@ -525,7 +523,7 @@ void STI::Monolithic::fd_check()
 
 /*--------------------------------------------------------------------------------*
  *--------------------------------------------------------------------------------*/
-void STI::Monolithic::output_matrix_to_file(
+void STI::Monolithic::output_matrix_to_file(const std::string& output_file_name,
     const std::shared_ptr<const Core::LinAlg::SparseOperator> sparseoperator, const int precision,
     const double tolerance)
 {
@@ -592,8 +590,7 @@ void STI::Monolithic::output_matrix_to_file(
     // set file name
     std::ostringstream nproc;
     nproc << Core::Communication::num_mpi_ranks(comm);
-    const std::string filename(Global::Problem::instance()->output_control_file()->file_name() +
-                               ".matrix_" + nproc.str() + "proc.csv");
+    const std::string filename(output_file_name + ".matrix_" + nproc.str() + "proc.csv");
 
     // open file and write header at beginning
     std::ofstream file;
@@ -643,7 +640,7 @@ void STI::Monolithic::output_matrix_to_file(
 
 /*--------------------------------------------------------------------------------*
  *--------------------------------------------------------------------------------*/
-void STI::Monolithic::output_vector_to_file(
+void STI::Monolithic::output_vector_to_file(const std::string& output_file_name,
     const Core::LinAlg::MultiVector<double>& vector, const int precision, const double tolerance)
 {
   // extract communicator
@@ -683,8 +680,7 @@ void STI::Monolithic::output_vector_to_file(
     // set file name
     std::ostringstream nproc;
     nproc << Core::Communication::num_mpi_ranks(comm);
-    const std::string filename(Global::Problem::instance()->output_control_file()->file_name() +
-                               ".vector_" + nproc.str() + "proc.csv");
+    const std::string filename(output_file_name + ".vector_" + nproc.str() + "proc.csv");
 
     // open file and write header at beginning
     std::ofstream file;
