@@ -30,16 +30,15 @@ FOUR_C_NAMESPACE_OPEN
 
 /*--------------------------------------------------------------------------*
  *--------------------------------------------------------------------------*/
-SSTI::SSTIMono::SSTIMono(MPI_Comm comm, const Teuchos::ParameterList& globaltimeparams)
-    : SSTIAlgorithm(comm, globaltimeparams),
+SSTI::SSTIMono::SSTIMono(
+    Global::Problem& problem, MPI_Comm comm, const Teuchos::ParameterList& globaltimeparams)
+    : SSTIAlgorithm(problem, comm, globaltimeparams),
       increment_(nullptr),
       residual_(nullptr),
       solver_(std::make_shared<Core::LinAlg::Solver>(
-          Global::Problem::instance()->solver_params(
-              globaltimeparams.sublist("MONOLITHIC").get<int>("LINEAR_SOLVER")),
-          comm, Global::Problem::instance()->solver_params_callback(),
-          Teuchos::getIntegralValue<Core::IO::Verbositylevel>(
-              Global::Problem::instance()->io_params(), "VERBOSITY"))),
+          problem.solver_params(globaltimeparams.sublist("MONOLITHIC").get<int>("LINEAR_SOLVER")),
+          comm, problem.solver_params_callback(),
+          Teuchos::getIntegralValue<Core::IO::Verbositylevel>(problem.io_params(), "VERBOSITY"))),
       scatrastructureoffdiagcoupling_(nullptr),
       scatrathermooffdiagcoupling_(nullptr),
       thermostructureoffdiagcoupling_(nullptr),
@@ -276,12 +275,12 @@ void SSTI::SSTIMono::setup()
           equilibration_method_.thermo != Core::LinAlg::EquilibrationMethod::none))
     FOUR_C_THROW("Block based equilibration only for block matrices");
 
-  const bool equilibration_scatra_initial = Global::Problem::instance()
-                                                ->ssti_control_params()
+  const bool equilibration_scatra_initial = AlgorithmBase::problem()
+                                                .ssti_control_params()
                                                 .sublist("MONOLITHIC")
                                                 .get<bool>("EQUILIBRATION_INIT_SCATRA");
   const bool calc_initial_pot =
-      Global::Problem::instance()->elch_control_params().get<bool>("INITPOTCALC");
+      AlgorithmBase::problem().elch_control_params().get<bool>("INITPOTCALC");
 
   if (!equilibration_scatra_initial and
       scatra_field()->equilibration_method() != Core::LinAlg::EquilibrationMethod::none)

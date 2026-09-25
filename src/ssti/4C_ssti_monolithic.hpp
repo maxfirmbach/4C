@@ -70,7 +70,8 @@ namespace SSTI
   class SSTIMono : public SSTIAlgorithm
   {
    public:
-    explicit SSTIMono(MPI_Comm comm, const Teuchos::ParameterList& globaltimeparams);
+    explicit SSTIMono(
+        Global::Problem& problem, MPI_Comm comm, const Teuchos::ParameterList& globaltimeparams);
 
     /*!
      * @brief get a vector containing positions within system matrix for the specific subproblem

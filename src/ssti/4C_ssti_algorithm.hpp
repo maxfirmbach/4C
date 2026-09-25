@@ -54,7 +54,8 @@ namespace SSTI
   class SSTIAlgorithm : public Adapter::AlgorithmBase
   {
    public:
-    explicit SSTIAlgorithm(MPI_Comm comm, const Teuchos::ParameterList& globaltimeparams);
+    explicit SSTIAlgorithm(
+        Global::Problem& problem, MPI_Comm comm, const Teuchos::ParameterList& globaltimeparams);
 
     //! Setup of algorithm
     //! Clone Discretizations, init and setup subproblems, setup coupling adapters at interfaces,
@@ -118,7 +119,7 @@ namespace SSTI
     virtual void timeloop() = 0;
 
     //! test results (if necessary)
-    virtual void test_results(MPI_Comm comm) const;
+    virtual void test_results(MPI_Comm comm);
 
    protected:
     //! clone scatra from structure and then thermo from scatra
@@ -174,7 +175,7 @@ namespace SSTI
   };  // SSTI_Algorithm
 
   //! Construct specific SSTI algorithm
-  std::shared_ptr<SSTI::SSTIAlgorithm> build_ssti(
+  std::shared_ptr<SSTI::SSTIAlgorithm> build_ssti(Global::Problem& problem,
       SSTI::SolutionScheme coupling, MPI_Comm comm, const Teuchos::ParameterList& sstiparams);
 }  // namespace SSTI
 FOUR_C_NAMESPACE_CLOSE

@@ -162,7 +162,7 @@ void entrypoint_switch()
       ssi_drt();
       break;
     case Core::ProblemType::ssti:
-      ssti_drt();
+      ssti_drt(problem);
       break;
 
     case Core::ProblemType::particle:
