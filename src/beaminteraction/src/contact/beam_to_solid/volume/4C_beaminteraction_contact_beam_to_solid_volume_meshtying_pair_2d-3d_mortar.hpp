@@ -30,6 +30,13 @@ namespace GeometryPair
    * @tparam n_fourier_modes Number of Fourier modes.
    * @tparam spatial_dim Number of spatial dimensions. This affects the number of degrees of freedom
    * of the element
+   *
+   * The implementation is based on:
+   *
+   * L. Heltai and P. Zunino: Reduced Lagrange multiplier approach for non-matching coupling of
+   * mixed-dimensional domains, Mathematical Models and Methods in Applied Sciences,
+   * 33(12):2425-2462, 2023
+   *
    */
   template <typename CurveDiscretization, unsigned int n_fourier_modes,
       unsigned int spatial_dim = 3>
