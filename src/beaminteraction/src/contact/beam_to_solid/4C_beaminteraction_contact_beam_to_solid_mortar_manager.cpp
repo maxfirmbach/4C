@@ -452,6 +452,21 @@ void BeamInteraction::BeamToSolidMortarManager::evaluate_coupling_terms_lagrange
 /**
  *
  */
+void BeamInteraction::BeamToSolidMortarManager::evaluate_force_stiff_continuous_augmentation(
+    const std::shared_ptr<const Solid::ModelEvaluator::BeamInteractionDataState>& data_state,
+    std::shared_ptr<Core::LinAlg::SparseMatrix> stiff,
+    std::shared_ptr<Core::LinAlg::FEVector<double>> force)
+{
+  for (const auto& elepairptr : contact_pairs_)
+  {
+    elepairptr->evaluate_and_assemble_continuous_augmentation(
+        *discret_, this, force, stiff, *data_state->get_dis_col_np());
+  }
+}
+
+/**
+ *
+ */
 bool BeamInteraction::BeamToSolidMortarManager::have_lagrange_dofs() const
 {
   return parameters_.constraint_enforcement ==

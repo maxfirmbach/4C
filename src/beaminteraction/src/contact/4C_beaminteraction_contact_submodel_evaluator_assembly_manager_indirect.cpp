@@ -106,6 +106,76 @@ void BeamInteraction::SubmodelEvaluator::BeamContactAssemblyManagerInDirect::eva
         fe_sysvec->multiply(1.0, augmentation_scaling_vector, *sysvec_penalty, 1.0);
       }
     }
+    if (mortar_manager_->get_lagrange_formulation() ==
+        BeamToSolid::BeamToSolidLagrangeFormulation::continuous_augmented)
+    {
+      const auto* dof_row_map = discret->dof_row_map();
+      const auto* solid_map = &mortar_manager_->get_solid_dof_row_map();
+      const auto* beam_map = &mortar_manager_->get_beam_dof_row_map();
+
+      // Create matrix and vector for the continuous augmented contributions.
+      std::shared_ptr<Core::LinAlg::SparseMatrix> sysmat_continuous_augmented = nullptr;
+      if (fe_sysmat != nullptr)
+      {
+        sysmat_continuous_augmented = std::make_shared<Core::LinAlg::SparseMatrix>(
+            *dof_row_map, 81, true, true, Core::LinAlg::SparseMatrix::FE_MATRIX);
+      }
+      std::shared_ptr<Core::LinAlg::FEVector<double>> sysvec_continuous_augmented = nullptr;
+      if (fe_sysvec != nullptr)
+      {
+        sysvec_continuous_augmented =
+            std::make_shared<Core::LinAlg::FEVector<double>>(*dof_row_map);
+      }
+
+      // Evaluate the continuous augmented coupling contributions.
+      mortar_manager_->evaluate_force_stiff_continuous_augmentation(
+          data_state, sysmat_continuous_augmented, sysvec_continuous_augmented);
+      if (sysmat_continuous_augmented != nullptr) sysmat_continuous_augmented->complete();
+      if (sysvec_continuous_augmented != nullptr) sysvec_continuous_augmented->complete();
+
+      Core::LinAlg::Vector<double> augmentation_scaling_vector(*dof_row_map);
+      augmentation_scaling_vector.put_scalar(1.0);
+
+      auto add_scaling_values_to_vector = [&](const Core::LinAlg::Map& sub_map, double val)
+      {
+        for (int i = 0; i < sub_map.num_my_elements(); ++i)
+        {
+          int gid = sub_map.gid(i);
+          int lid_dof_row_map = dof_row_map->lid(gid);
+          if (lid_dof_row_map != -1)
+          {
+            augmentation_scaling_vector.replace_local_value(lid_dof_row_map, val);
+          }
+          else
+          {
+            FOUR_C_THROW(
+                "Global ID {} from sub map is not found in dof row map. This should not happen.",
+                gid);
+          }
+        }
+      };
+
+      if (beam_to_solid_volume_meshtying_params != nullptr)
+      {
+        add_scaling_values_to_vector(*solid_map,
+            beam_to_solid_volume_meshtying_params->get_augmentation_scaling_parameter_solid());
+        add_scaling_values_to_vector(*beam_map,
+            beam_to_solid_volume_meshtying_params->get_augmentation_scaling_parameter_beam());
+      }
+
+      // Scale the penalty contributions and add them to the system matrix and vector.
+      if (fe_sysmat != nullptr)
+      {
+        sysmat_continuous_augmented->left_scale(augmentation_scaling_vector);
+        auto sysmat_continuous_augmented_filtered =
+            Core::LinAlg::threshold_matrix(*sysmat_continuous_augmented, 1e-14);
+        fe_sysmat->add(*sysmat_continuous_augmented_filtered, false, 1.0, 1.0);
+      }
+      if (fe_sysvec != nullptr)
+      {
+        fe_sysvec->multiply(1.0, augmentation_scaling_vector, *sysvec_continuous_augmented, 1.0);
+      }
+    }
   }
   else
   {

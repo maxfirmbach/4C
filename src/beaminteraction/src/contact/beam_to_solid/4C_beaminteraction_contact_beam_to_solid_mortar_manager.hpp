@@ -225,6 +225,18 @@ namespace BeamInteraction
         std::shared_ptr<Core::LinAlg::FEVector<double>> force);
 
     /**
+     * \brief Evaluate the coupling contributions resulting from a continuous augmented
+     * type of constraint enforcement.
+     * @param data_state (in) Beam interaction data state.
+     * @param stiff (out) Global stiffness matrix. Mortar terms are added to it.
+     * @param force (out) Global force vector. Mortar terms are added to it.
+     */
+    void evaluate_force_stiff_continuous_augmentation(
+        const std::shared_ptr<const Solid::ModelEvaluator::BeamInteractionDataState>& data_state,
+        std::shared_ptr<Core::LinAlg::SparseMatrix> stiff,
+        std::shared_ptr<Core::LinAlg::FEVector<double>> force);
+
+    /**
      * \brief Check if the model uses Lagrange multipliers.
      */
     bool have_lagrange_dofs() const;

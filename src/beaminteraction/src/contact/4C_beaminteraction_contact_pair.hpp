@@ -242,8 +242,8 @@ namespace BeamInteraction
      * matrix.
      *
      * This method can be used for pairs that couple more DOF than the ones from the two contact
-     * elements, e.g. surface patches with averaged normals also create coupling terms in the DOF of
-     * the neighbouring surface elements. Those pairs write their coupling terms into the global
+     * elements, e.g. surface patches with averaged normals alswo create coupling terms in the DOF
+     * of the neighbouring surface elements. Those pairs write their coupling terms into the global
      * system vector / matrix and do not require an outside routine to do so.
      *
      * In some cases this can also be used to avoid the creation of variable size element vectors
@@ -331,6 +331,13 @@ namespace BeamInteraction
         Core::LinAlg::SparseMatrix& global_kappa_lin_solid,
         Core::LinAlg::FEVector<double>& global_lambda_active,
         const std::shared_ptr<const Core::LinAlg::Vector<double>>& displacement_vector) {};
+
+
+    virtual void evaluate_and_assemble_continuous_augmentation(
+        const Core::FE::Discretization& discret, const BeamToSolidMortarManager* mortar_manager,
+        const std::shared_ptr<Core::LinAlg::FEVector<double>>& force_vector,
+        const std::shared_ptr<Core::LinAlg::SparseMatrix>& stiffness_matrix,
+        const Core::LinAlg::Vector<double>& displacement_vector) {};
 
     /**
      * \brief Add the visualization of this pair to the beam to solid visualization output writer.

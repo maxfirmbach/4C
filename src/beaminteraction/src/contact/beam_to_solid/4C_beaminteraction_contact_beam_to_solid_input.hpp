@@ -67,6 +67,8 @@ namespace BeamToSolid
     saddlepoint,
     //!  Augmented system adding penalty contributions to the saddlepoint system
     augmented,
+    //!  Augmented system based on local penalty contributions added to the saddlepoint system
+    continuous_augmented,
     //!  Penalty regularized approach assembled into a 2x2 block system.
     regularized
   };

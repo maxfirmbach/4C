@@ -159,6 +159,7 @@ namespace BeamInteraction
 
     //! FAD type to evaluate the rotational coupling terms and derive them w.r.t. psi.
     using scalar_type_rotation_vector = typename Sacado::Fad::SLFad<double, 3>;
+    using scalar_type_pair = Sacado::Fad::SLFad<double, n_dof_fad_>;
 
    public:
     /**
@@ -203,6 +204,12 @@ namespace BeamInteraction
         const std::shared_ptr<Core::LinAlg::FEVector<double>>& force_vector,
         const std::shared_ptr<Core::LinAlg::SparseMatrix>& stiffness_matrix,
         const Core::LinAlg::Vector<double>& global_lambda,
+        const Core::LinAlg::Vector<double>& displacement_vector) override;
+
+    void evaluate_and_assemble_continuous_augmentation(const Core::FE::Discretization& discret,
+        const BeamToSolidMortarManager* mortar_manager,
+        const std::shared_ptr<Core::LinAlg::FEVector<double>>& force_vector,
+        const std::shared_ptr<Core::LinAlg::SparseMatrix>& stiffness_matrix,
         const Core::LinAlg::Vector<double>& displacement_vector) override;
 
     /**
