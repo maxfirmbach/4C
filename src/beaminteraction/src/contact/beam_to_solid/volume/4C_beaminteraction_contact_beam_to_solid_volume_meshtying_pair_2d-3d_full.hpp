@@ -100,9 +100,6 @@ namespace BeamInteraction
     //! Reference triad interpolation in the beam element
     LargeRotations::TriadInterpolationLocalRotationVectors<3, double>
         triad_interpolation_scheme_ref_;
-
-    //! Current triad interpolation in the beam element
-    LargeRotations::TriadInterpolationLocalRotationVectors<3, double> triad_interpolation_scheme_;
   };
 }  // namespace BeamInteraction
 
