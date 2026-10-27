@@ -171,7 +171,7 @@ void BeamInteraction::BeamToSolidVolumeMeshtyingPair2D3DMortar<Beam, Solid,
 
       GeometryPair::evaluate_shape_function_matrix<GeometryPair::t_line3>(L, eta);
 
-      triad_interpolation_scheme_.get_nodal_generalized_rotation_interpolation_matrices_at_xi(
+      this->triad_interpolation_scheme_.get_nodal_generalized_rotation_interpolation_matrices_at_xi(
           I_tilde_vector, eta);
       for (unsigned int i_node = 0; i_node < n_nodes_rot_; i_node++)
         for (unsigned int i_dim_0 = 0; i_dim_0 < 3; i_dim_0++)
@@ -179,7 +179,7 @@ void BeamInteraction::BeamToSolidVolumeMeshtyingPair2D3DMortar<Beam, Solid,
             I_tilde(i_dim_0, i_node * 3 + i_dim_1) = I_tilde_vector[i_node](i_dim_0, i_dim_1);
 
       // Get the rotation vector at this Gauss point
-      triad_interpolation_scheme_.get_interpolated_quaternion_at_xi(quaternion_double, eta);
+      this->triad_interpolation_scheme_.get_interpolated_quaternion_at_xi(quaternion_double, eta);
       Core::LargeRotations::quaterniontoangle(quaternion_double, rotation_vector_double);
       set_q_fad(rotation_vector_double, rotation_vector_fad);
       Core::LargeRotations::angletoquaternion(rotation_vector_fad, quaternion_fad);
@@ -395,12 +395,13 @@ void BeamInteraction::BeamToSolidVolumeMeshtyingPair2D3DMortar<Beam, Solid,
  *
  */
 template <typename Beam, typename Solid, typename Mortar>
-void BeamInteraction::BeamToSolidVolumeMeshtyingPair2D3DMortar<Beam, Solid,
-    Mortar>::evaluate_and_assemble_continuous_augmentation(const Core::FE::Discretization& discret,
-    const BeamToSolidMortarManager* mortar_manager,
-    const std::shared_ptr<Core::LinAlg::FEVector<double>>& force_vector,
-    const std::shared_ptr<Core::LinAlg::SparseMatrix>& stiffness_matrix,
-    const Core::LinAlg::Vector<double>& displacement_vector)
+void BeamInteraction::BeamToSolidVolumeMeshtyingPair2D3DMortar<Beam, Solid, Mortar>::
+    evaluate_and_assemble_continuous_augmentation(
+        const std::shared_ptr<const Core::FE::Discretization>& discret,
+        const BeamToSolidMortarManager* mortar_manager,
+        const std::shared_ptr<Core::LinAlg::FEVector<double>>& force_vector,
+        const std::shared_ptr<Core::LinAlg::SparseMatrix>& stiffness_matrix,
+        const std::shared_ptr<const Core::LinAlg::Vector<double>>& displacement_vector)
 {
   this->evaluate_force_stiff_penalty_potential(
       discret, force_vector, stiffness_matrix, displacement_vector);
@@ -415,7 +416,7 @@ void BeamInteraction::BeamToSolidVolumeMeshtyingPair2D3DMortar<Beam, Solid,
     const std::shared_ptr<const Core::LinAlg::Vector<double>>& ia_discolnp)
 {
   get_beam_triad_interpolation_scheme(discret, *ia_discolnp, this->element1(),
-      triad_interpolation_scheme_, this->triad_interpolation_scheme_ref_);
+      this->triad_interpolation_scheme_, this->triad_interpolation_scheme_ref_);
 }
 
 /**

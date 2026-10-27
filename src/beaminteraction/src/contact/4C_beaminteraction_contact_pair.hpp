@@ -334,10 +334,11 @@ namespace BeamInteraction
 
 
     virtual void evaluate_and_assemble_continuous_augmentation(
-        const Core::FE::Discretization& discret, const BeamToSolidMortarManager* mortar_manager,
+        const std::shared_ptr<const Core::FE::Discretization>& discret,
+        const BeamToSolidMortarManager* mortar_manager,
         const std::shared_ptr<Core::LinAlg::FEVector<double>>& force_vector,
         const std::shared_ptr<Core::LinAlg::SparseMatrix>& stiffness_matrix,
-        const Core::LinAlg::Vector<double>& displacement_vector) {};
+        const std::shared_ptr<const Core::LinAlg::Vector<double>>& displacement_vector) {};
 
     /**
      * \brief Add the visualization of this pair to the beam to solid visualization output writer.

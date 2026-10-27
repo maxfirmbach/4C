@@ -460,7 +460,7 @@ void BeamInteraction::BeamToSolidMortarManager::evaluate_force_stiff_continuous_
   for (const auto& elepairptr : contact_pairs_)
   {
     elepairptr->evaluate_and_assemble_continuous_augmentation(
-        *discret_, this, force, stiff, *data_state->get_dis_col_np());
+        discret_, this, force, stiff, data_state->get_dis_col_np());
   }
 }
 
