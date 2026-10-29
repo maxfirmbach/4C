@@ -101,6 +101,41 @@ if [[ "$compile" == "1" && ( "$mode_cuda_host" == "1" || "$mode_cuda_device" == 
     --cuda-path="$cuda_path"
     --cuda-gpu-arch="$arch"
   )
+  compatibility_dir="${BASH_SOURCE[0]%/*}/clangcuda-compat"
+  cuda_include_dirs=(
+    "$cuda_path/include"
+    "$cuda_path/targets/$(uname -m)-linux/include"
+  )
+
+  cuda_version_header=""
+  for include_dir in "${cuda_include_dirs[@]}"; do
+    if [[ -f "$include_dir/cuda.h" ]]; then
+      cuda_version_header="$include_dir/cuda.h"
+      break
+    fi
+  done
+  if [[ -z "$cuda_version_header" ]]; then
+    echo "clangcuda++ wrapper error: could not find cuda.h under $cuda_path" >&2
+    exit 1
+  fi
+
+  cuda_version="$(awk '$1 == "#define" && $2 == "CUDA_VERSION" { print $3; exit }' "$cuda_version_header")"
+  if [[ ! "$cuda_version" =~ ^[0-9]+$ ]]; then
+    echo "clangcuda++ wrapper error: could not determine CUDA_VERSION from $cuda_version_header" >&2
+    exit 1
+  fi
+  if ((cuda_version >= 13000)); then
+    final+=(-I"$compatibility_dir")
+  fi
+
+  for include_dir in "${cuda_include_dirs[@]}"; do
+    math_functions_header="$include_dir/crt/math_functions.hpp"
+    if [[ -f "$math_functions_header" ]] &&
+      grep -q 'rsqrt(const double a)) _NV_RSQRT_SPECIFIER' "$math_functions_header"; then
+      final+=('-D_NV_RSQRT_SPECIFIER=noexcept(true)')
+      break
+    fi
+  done
 fi
 final+=(-Wno-unknown-cuda-version "${args[@]}")
 
@@ -131,6 +166,13 @@ if [[ "$compile" == "1" ]]; then
 
   # An empty launcher array leaves the command unchanged.
   final=("${compiler_launcher[@]}" "${final[@]}")
+fi
+
+# CUDA's fatbinary CLI changed with the toolkit. Keep Clang pointed at this
+# compatibility wrapper, which forwards directly or translates as needed.
+if [[ "$compile" == "1" && ( "$mode_cuda_host" == "1" || "$mode_cuda_device" == "1" ) ]]; then
+  export CLANGCUDA_CUDA_PATH="$cuda_path"
+  final+=(-B"${BASH_SOURCE[0]%/*}/clangcuda-compat/bin")
 fi
 
 if [[ -n "$CLANGCUDA_LOG" ]]; then
