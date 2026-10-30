@@ -147,11 +147,14 @@ namespace BeamInteraction
    */
   template <typename Beam, typename Solid, typename Mortar>
   class BeamToSolidVolumeMeshtyingPair2D3DMortar
-      : public BeamToSolidVolumeMeshtyingPair2D3DBase<double, Beam, Solid>
+      : public BeamToSolidVolumeMeshtyingPair2D3DBase<
+            GeometryPair::line_to_volume_scalar_type<Beam, Solid>, Beam, Solid>
   {
    private:
+    using scalar_type = GeometryPair::line_to_volume_scalar_type<Beam, Solid>;
+
     //! Shortcut to the base class.
-    using base_class = BeamToSolidVolumeMeshtyingPair2D3DBase<double, Beam, Solid>;
+    using base_class = BeamToSolidVolumeMeshtyingPair2D3DBase<scalar_type, Beam, Solid>;
 
     //! Rotation representation. Each node has a rotation vector with 3 components.
     static constexpr unsigned int n_nodes_rot_ = 3;
