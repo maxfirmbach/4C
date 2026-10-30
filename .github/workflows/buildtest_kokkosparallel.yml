@@ -119,6 +119,11 @@ jobs:
           cache-key: kokkoscuda-clangcuda-ccache-4.13.6
 
   clangcuda_cuda13_tiny_example_build:
+    name: CUDA 13 tiny example build (Clang ${{ matrix.clang }})
+    strategy:
+      fail-fast: false
+      matrix:
+        clang: [21, 22]
     runs-on: ubuntu-latest
     container:
       image: nvidia/cuda:13.3.1-devel-ubuntu26.04
@@ -126,7 +131,7 @@ jobs:
       run:
         shell: bash
     env:
-      CLANGCUDA_CLANG_PATH: /usr/bin/clang++-21
+      CLANGCUDA_CLANG_PATH: /usr/bin/clang++-${{ matrix.clang }}
       CLANGCUDA_CUDA_PATH: /usr/local/cuda
       CLANGCUDA_ARCH: sm_90
     steps:
@@ -134,7 +139,8 @@ jobs:
       - name: Install Clang
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends clang-21
+          apt-get install -y --no-install-recommends clang-${{ matrix.clang }}
+          "$CLANGCUDA_CLANG_PATH" --version
       - name: Compile and link CUDA kernel with the checkout's wrapper
         run: |
           mkdir -p build/clangcuda-tiny-example

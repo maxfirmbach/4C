@@ -132,7 +132,16 @@ if [[ "$compile" == "1" && ( "$mode_cuda_host" == "1" || "$mode_cuda_device" == 
     math_functions_header="$include_dir/crt/math_functions.hpp"
     if [[ -f "$math_functions_header" ]] &&
       grep -q 'rsqrt(const double a)) _NV_RSQRT_SPECIFIER' "$math_functions_header"; then
-      final+=('-D_NV_RSQRT_SPECIFIER=noexcept(true)')
+      clang_resource_dir="$("$clang_path" -print-resource-dir)" || exit $?
+      clang_cuda_header="$clang_resource_dir/include/__clang_cuda_runtime_wrapper.h"
+      if [[ ! -f "$clang_cuda_header" ]]; then
+        echo "clangcuda++ wrapper error: could not find $clang_cuda_header" >&2
+        exit 1
+      fi
+      # LLVM #185701 supplies this macro in newer Clang releases and backports.
+      if ! grep -Eq '^[[:space:]]*#[[:space:]]*define[[:space:]]+_NV_RSQRT_SPECIFIER([[:space:]]|$)' "$clang_cuda_header"; then
+        final+=('-D_NV_RSQRT_SPECIFIER=noexcept(true)')
+      fi
       break
     fi
   done
