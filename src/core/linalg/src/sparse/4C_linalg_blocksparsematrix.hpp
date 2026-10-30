@@ -270,8 +270,7 @@ namespace Core::LinAlg
         const Core::LinAlg::SerialDenseMatrix& Aele, const std::vector<int>& lmrow,
         const std::vector<int>& lmrowowner, const std::vector<int>& lmcol) override
     {
-      const int myrank =
-          Core::Communication::my_mpi_rank(Core::Communication::unpack_epetra_comm(Comm()));
+      const int myrank = Core::Communication::my_mpi_rank(get_comm());
       Strategy::assemble(eid, myrank, lmstride, Aele, lmrow, lmrowowner, lmcol);
     }
 
