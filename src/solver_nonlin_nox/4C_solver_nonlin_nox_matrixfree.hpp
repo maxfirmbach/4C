@@ -15,7 +15,6 @@
 #include "4C_solver_nonlin_nox_interface_required_base.hpp"
 #include "4C_solver_nonlin_nox_vector.hpp"
 
-#include <Epetra_Operator.h>
 #include <NOX_Thyra_Group.H>
 #include <NOX_Thyra_MatrixFreeJacobianOperator.hpp>
 #include <Thyra_StateFuncModelEvaluatorBase.hpp>
@@ -66,9 +65,6 @@ namespace NOX
        public:
         SparseOperatorWrapper(const ::Thyra::LinearOpBase<double>& op,
             const std::shared_ptr<const Core::LinAlg::Map> map);
-
-        // Methods of Core::LinAlg::SparseOperator interface
-        Epetra_Operator& epetra_operator() override;
 
         void zero() override;
 

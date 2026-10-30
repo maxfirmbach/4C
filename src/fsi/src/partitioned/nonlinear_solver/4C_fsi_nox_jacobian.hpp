@@ -15,7 +15,6 @@
 #include "4C_solver_nonlin_nox_interface_required_base.hpp"
 #include "4C_solver_nonlin_nox_vector.hpp"
 
-#include <Epetra_Operator.h>
 #include <NOX_Abstract_Group.H>
 #include <NOX_Utils.H>
 
@@ -38,9 +37,6 @@ namespace FSI
       */
       FSIMatrixFree(Teuchos::ParameterList& printParams,
           const std::shared_ptr<NOX::Nln::Interface::RequiredBase> i, const NOX::Nln::Vector& x);
-
-      // Methods of Core::LinAlg::SparseOperator interface
-      Epetra_Operator& epetra_operator() override;
 
       void zero() override;
 

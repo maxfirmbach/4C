@@ -16,8 +16,6 @@
 #include "4C_linalg_vector.hpp"
 #include "4C_utils_shared_ptr_from_ref.hpp"
 
-#include <Epetra_Operator.h>
-
 #include <memory>
 #include <vector>
 
@@ -74,10 +72,6 @@ namespace Core::LinAlg
   {
    public:
     virtual ~SparseOperator() = default;
-
-    /// return the internal Epetra_Operator
-    //! \warning Only low level solver routines are interested in the internal Epetra_Operator.
-    virtual Epetra_Operator& epetra_operator() = 0;
 
     /// set matrix to zero
     virtual void zero() = 0;

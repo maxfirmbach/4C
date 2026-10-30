@@ -34,11 +34,6 @@ FSI::Nonlinear::FSIMatrixFree::FSIMatrixFree(Teuchos::ParameterList& printParams
   perturbY.init(0.0);
 }
 
-Epetra_Operator& FSI::Nonlinear::FSIMatrixFree::epetra_operator()
-{
-  FOUR_C_THROW("Not implemented");
-}
-
 void FSI::Nonlinear::FSIMatrixFree::zero() { FOUR_C_THROW("Not implemented"); }
 
 void FSI::Nonlinear::FSIMatrixFree::reset() { FOUR_C_THROW("Not implemented"); }

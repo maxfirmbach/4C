@@ -93,11 +93,6 @@ NOX::Nln::MatrixFree::SparseOperatorWrapper::SparseOperatorWrapper(
 {
 }
 
-Epetra_Operator& NOX::Nln::MatrixFree::SparseOperatorWrapper::epetra_operator()
-{
-  FOUR_C_THROW("Not implemented");
-}
-
 void NOX::Nln::MatrixFree::SparseOperatorWrapper::zero() { FOUR_C_THROW("Not implemented"); }
 
 void NOX::Nln::MatrixFree::SparseOperatorWrapper::reset() { FOUR_C_THROW("Not implemented"); }

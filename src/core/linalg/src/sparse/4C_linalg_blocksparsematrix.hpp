@@ -146,9 +146,6 @@ namespace Core::LinAlg
 
     //@}
 
-    //! \brief return the internal Epetra_Operator
-    Epetra_Operator& epetra_operator() override { return *this; }
-
     /** \name Attribute set methods */
     //@{
 
