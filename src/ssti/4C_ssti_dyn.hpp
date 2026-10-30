@@ -12,8 +12,17 @@
 
 FOUR_C_NAMESPACE_OPEN
 
-//! global control routine for Structure - Scatra - Thermo - Interaction problem.
-void ssti_drt();
+namespace Global
+{
+  class Problem;
+}  // namespace Global
+
+/*!
+ * \brief Global control routine for Structure - Scatra - Thermo - Interaction problem
+ *
+ * \param problem  global problem providing parameters, discretizations and solvers
+ */
+void ssti_drt(Global::Problem& problem);
 
 FOUR_C_NAMESPACE_CLOSE
 

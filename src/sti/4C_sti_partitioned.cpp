@@ -19,15 +19,16 @@ FOUR_C_NAMESPACE_OPEN
 /*--------------------------------------------------------------------------------*
  | constructor                                                         fang 09/17 |
  *--------------------------------------------------------------------------------*/
-STI::Partitioned::Partitioned(MPI_Comm comm,  //! communicator
-    const Teuchos::ParameterList& stidyn,     //! parameter list for scatra-thermo interaction
+STI::Partitioned::Partitioned(Global::Problem& problem,  //! global problem
+    MPI_Comm comm,                                       //! communicator
+    const Teuchos::ParameterList& stidyn,  //! parameter list for scatra-thermo interaction
     const Teuchos::ParameterList&
         scatradyn,  //! scalar transport parameter list for scatra and thermo fields
     const Teuchos::ParameterList& solverparams_scatra,  //! solver parameter list for scatra field
     const Teuchos::ParameterList& solverparams_thermo   //! solver parameter list for thermo field
     )
     :  // instantiate base class
-      Algorithm(comm, stidyn, scatradyn, solverparams_scatra, solverparams_thermo),
+      Algorithm(problem, comm, stidyn, scatradyn, solverparams_scatra, solverparams_thermo),
       couplingtype_(Teuchos::getIntegralValue<STI::CouplingType>(stidyn, "COUPLINGTYPE")),
       omegamax_(stidyn.sublist("PARTITIONED").get<double>("OMEGAMAX"))
 {

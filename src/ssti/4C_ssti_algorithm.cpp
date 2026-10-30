@@ -30,8 +30,9 @@ FOUR_C_NAMESPACE_OPEN
 
 /*----------------------------------------------------------------------*/
 /*----------------------------------------------------------------------*/
-SSTI::SSTIAlgorithm::SSTIAlgorithm(MPI_Comm comm, const Teuchos::ParameterList& globaltimeparams)
-    : AlgorithmBase(*Global::Problem::instance(), comm, globaltimeparams),
+SSTI::SSTIAlgorithm::SSTIAlgorithm(
+    Global::Problem& problem, MPI_Comm comm, const Teuchos::ParameterList& globaltimeparams)
+    : AlgorithmBase(problem, comm, globaltimeparams),
       iter_(0),
       scatra_(nullptr),
       structure_(nullptr),
@@ -40,9 +41,7 @@ SSTI::SSTIAlgorithm::SSTIAlgorithm(MPI_Comm comm, const Teuchos::ParameterList& 
       meshtying_strategy_scatra_(nullptr),
       meshtying_strategy_thermo_(nullptr),
       ssti_structure_meshtying_(nullptr),
-      interfacemeshtying_(Global::Problem::instance()
-              ->get_dis("structure")
-              ->has_condition("SSTIInterfaceMeshtying")),
+      interfacemeshtying_(problem.get_dis("structure")->has_condition("SSTIInterfaceMeshtying")),
       isinit_(false),
       issetup_(false)
 {
@@ -58,42 +57,42 @@ void SSTI::SSTIAlgorithm::init(MPI_Comm comm, const Teuchos::ParameterList& ssti
   issetup_ = false;
 
   // get the global problem
-  Global::Problem* problem = Global::Problem::instance();
+  auto& problem = AlgorithmBase::problem();
 
-  problem->get_dis("structure")->fill_complete();
-  problem->get_dis("scatra")->fill_complete();
-  problem->get_dis("thermo")->fill_complete();
+  problem.get_dis("structure")->fill_complete();
+  problem.get_dis("scatra")->fill_complete();
+  problem.get_dis("thermo")->fill_complete();
 
   // clone scatra discretization from structure discretization first. Afterwards, clone thermo
   // discretization from scatra discretization
   clone_discretizations(comm);
 
-  std::shared_ptr<Core::FE::Discretization> structuredis = problem->get_dis("structure");
-  std::shared_ptr<Core::FE::Discretization> scatradis = problem->get_dis("scatra");
-  std::shared_ptr<Core::FE::Discretization> thermodis = problem->get_dis("thermo");
+  std::shared_ptr<Core::FE::Discretization> structuredis = problem.get_dis("structure");
+  std::shared_ptr<Core::FE::Discretization> scatradis = problem.get_dis("scatra");
+  std::shared_ptr<Core::FE::Discretization> thermodis = problem.get_dis("thermo");
 
   // safety check
   if (Teuchos::getIntegralValue<Solid::IntegrationStrategy>(structparams, "INT_STRATEGY") ==
       Solid::IntegrationStrategy::int_old)
     FOUR_C_THROW("Old structural time integration is not supported");
 
-  struct_adapterbase_ptr_ = Adapter::build_structure_algorithm(*problem, structparams);
+  struct_adapterbase_ptr_ = Adapter::build_structure_algorithm(problem, structparams);
 
   // initialize structure base algorithm
   struct_adapterbase_ptr_->init(
       sstitimeparams, const_cast<Teuchos::ParameterList&>(structparams), structuredis);
 
   // create and initialize scatra problem and thermo problem
-  scatra_ = std::make_shared<Adapter::ScaTraBaseAlgorithm>(*problem, sstitimeparams,
+  scatra_ = std::make_shared<Adapter::ScaTraBaseAlgorithm>(problem, sstitimeparams,
       SSI::Utils::modify_scatra_params(scatraparams),
-      problem->solver_params(scatraparams.get<int>("LINEAR_SOLVER")), "scatra", true);
+      problem.solver_params(scatraparams.get<int>("LINEAR_SOLVER")), "scatra", true);
   scatra_->init();
   scatra_->scatra_field()->set_number_of_dof_set_displacement(1);
   scatra_->scatra_field()->set_number_of_dof_set_velocity(1);
   scatra_->scatra_field()->set_number_of_dof_set_thermo(2);
-  thermo_ = std::make_shared<Adapter::ScaTraBaseAlgorithm>(*problem, sstitimeparams,
+  thermo_ = std::make_shared<Adapter::ScaTraBaseAlgorithm>(problem, sstitimeparams,
       clone_thermo_params(scatraparams, thermoparams),
-      problem->solver_params(thermoparams.get<int>("LINEAR_SOLVER")), "thermo", true);
+      problem.solver_params(thermoparams.get<int>("LINEAR_SOLVER")), "thermo", true);
   thermo_->init();
   thermo_->scatra_field()->set_number_of_dof_set_displacement(1);
   thermo_->scatra_field()->set_number_of_dof_set_velocity(1);
@@ -137,13 +136,13 @@ void SSTI::SSTIAlgorithm::init(MPI_Comm comm, const Teuchos::ParameterList& ssti
   // now we can finally fill our discretizations
   // reinitialization of the structural elements is
   // vital for parallelization here!
-  problem->get_dis("structure")->fill_complete();
-  problem->get_dis("scatra")->fill_complete({
+  problem.get_dis("structure")->fill_complete();
+  problem.get_dis("scatra")->fill_complete({
       .assign_degrees_of_freedom = true,
       .init_elements = false,
       .do_boundary_conditions = true,
   });
-  problem->get_dis("thermo")->fill_complete({
+  problem.get_dis("thermo")->fill_complete({
       .assign_degrees_of_freedom = true,
       .init_elements = false,
       .do_boundary_conditions = true,
@@ -157,7 +156,7 @@ void SSTI::SSTIAlgorithm::init(MPI_Comm comm, const Teuchos::ParameterList& ssti
 void SSTI::SSTIAlgorithm::setup()
 {
   // get the global problem
-  Global::Problem* problem = Global::Problem::instance();
+  auto& problem = AlgorithmBase::problem();
 
   // check initialization
   check_is_init();
@@ -168,8 +167,8 @@ void SSTI::SSTIAlgorithm::setup()
 
   // pass initial scalar field to structural discretization to correctly compute initial
   // accelerations
-  problem->get_dis("structure")->set_state(1, "scalarfield", *scatra_->scatra_field()->phinp());
-  problem->get_dis("structure")->set_state(2, "temperature", *thermo_->scatra_field()->phinp());
+  problem.get_dis("structure")->set_state(1, "scalarfield", *scatra_->scatra_field()->phinp());
+  problem.get_dis("structure")->set_state(2, "temperature", *thermo_->scatra_field()->phinp());
 
   // set up structural base algorithm
   struct_adapterbase_ptr_->setup();
@@ -241,19 +240,19 @@ void SSTI::SSTIAlgorithm::clone_discretizations(MPI_Comm comm)
   // Then, the scatra discretization is cloned.
   // Then, the thermo discretization is cloned.
 
-  Global::Problem* problem = Global::Problem::instance();
+  auto& problem = AlgorithmBase::problem();
 
-  std::shared_ptr<Core::FE::Discretization> structdis = problem->get_dis("structure");
-  std::shared_ptr<Core::FE::Discretization> scatradis = problem->get_dis("scatra");
-  std::shared_ptr<Core::FE::Discretization> thermodis = problem->get_dis("thermo");
+  std::shared_ptr<Core::FE::Discretization> structdis = problem.get_dis("structure");
+  std::shared_ptr<Core::FE::Discretization> scatradis = problem.get_dis("scatra");
+  std::shared_ptr<Core::FE::Discretization> thermodis = problem.get_dis("thermo");
 
   if (scatradis->num_global_nodes() == 0)
   {
     Core::FE::clone_discretization<SSTI::SSTIScatraStructureCloneStrategy>(
-        *structdis, *scatradis, Global::Problem::instance()->cloning_material_map());
+        *structdis, *scatradis, problem.cloning_material_map());
     scatradis->fill_complete();
     Core::FE::clone_discretization<SSTI::SSTIScatraThermoCloneStrategy>(
-        *scatradis, *thermodis, Global::Problem::instance()->cloning_material_map());
+        *scatradis, *thermodis, problem.cloning_material_map());
     thermodis->fill_complete();
   }
   else
@@ -276,15 +275,15 @@ void SSTI::SSTIAlgorithm::read_restart(int restart)
 
 /*----------------------------------------------------------------------*/
 /*----------------------------------------------------------------------*/
-void SSTI::SSTIAlgorithm::test_results(MPI_Comm comm) const
+void SSTI::SSTIAlgorithm::test_results(MPI_Comm comm)
 {
-  Global::Problem* problem = Global::Problem::instance();
+  auto& problem = AlgorithmBase::problem();
 
-  problem->add_field_test(structure_->create_field_test());
-  problem->add_field_test(scatra_->create_scatra_field_test());
-  problem->add_field_test(thermo_->create_scatra_field_test());
-  problem->add_field_test(std::make_shared<SSTI::SSTIResultTest>(*this));
-  problem->test_all(comm);
+  problem.add_field_test(structure_->create_field_test());
+  problem.add_field_test(scatra_->create_scatra_field_test());
+  problem.add_field_test(thermo_->create_scatra_field_test());
+  problem.add_field_test(std::make_shared<SSTI::SSTIResultTest>(*this));
+  problem.test_all(comm);
 }
 
 /*----------------------------------------------------------------------*/
@@ -490,7 +489,7 @@ Teuchos::ParameterList SSTI::SSTIAlgorithm::clone_thermo_params(
 
 /*----------------------------------------------------------------------*/
 /*----------------------------------------------------------------------*/
-std::shared_ptr<SSTI::SSTIAlgorithm> SSTI::build_ssti(
+std::shared_ptr<SSTI::SSTIAlgorithm> SSTI::build_ssti(Global::Problem& problem,
     SSTI::SolutionScheme coupling, MPI_Comm comm, const Teuchos::ParameterList& sstiparams)
 {
   std::shared_ptr<SSTI::SSTIAlgorithm> ssti = nullptr;
@@ -498,7 +497,7 @@ std::shared_ptr<SSTI::SSTIAlgorithm> SSTI::build_ssti(
   {
     case SSTI::SolutionScheme::monolithic:
     {
-      ssti = std::make_shared<SSTI::SSTIMono>(comm, sstiparams);
+      ssti = std::make_shared<SSTI::SSTIMono>(problem, comm, sstiparams);
       break;
     }
     default:

@@ -21,22 +21,20 @@ FOUR_C_NAMESPACE_OPEN
 
 /*----------------------------------------------------------------------*/
 /*----------------------------------------------------------------------*/
-void ssti_drt()
+void ssti_drt(Global::Problem& problem)
 {
-  Global::Problem* problem = Global::Problem::instance();
+  MPI_Comm comm = problem.get_dis("structure")->get_comm();
 
-  MPI_Comm comm = problem->get_dis("structure")->get_comm();
+  auto ssti = SSTI::build_ssti(problem,
+      Teuchos::getIntegralValue<SSTI::SolutionScheme>(problem.ssti_control_params(), "COUPALGO"),
+      comm, problem.ssti_control_params());
 
-  auto ssti = SSTI::build_ssti(
-      Teuchos::getIntegralValue<SSTI::SolutionScheme>(problem->ssti_control_params(), "COUPALGO"),
-      comm, problem->ssti_control_params());
-
-  ssti->init(comm, problem->ssti_control_params(), problem->scalar_transport_dynamic_params(),
-      problem->ssti_control_params().sublist("THERMO"), problem->structural_dynamic_params());
+  ssti->init(comm, problem.ssti_control_params(), problem.scalar_transport_dynamic_params(),
+      problem.ssti_control_params().sublist("THERMO"), problem.structural_dynamic_params());
 
   ssti->setup();
 
-  const int restart = problem->restart();
+  const int restart = problem.restart();
   if (restart)
   {
     ssti->read_restart(restart);

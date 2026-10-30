@@ -12,9 +12,18 @@
 
 FOUR_C_NAMESPACE_OPEN
 
-//! entry point for simulations of scalar-thermo interaction problems
-void sti_dyn(const int& restartstep  //! time step for restart
-);
+namespace Global
+{
+  class Problem;
+}  // namespace Global
+
+/*!
+ * \brief Entry point for simulations of scalar-thermo interaction problems
+ *
+ * \param problem      global problem providing parameters, discretizations and solvers
+ * \param restartstep  time step for restart (0 if no restart is performed)
+ */
+void sti_dyn(Global::Problem& problem, const int& restartstep);
 
 FOUR_C_NAMESPACE_CLOSE
 

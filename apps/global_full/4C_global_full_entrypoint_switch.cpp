@@ -74,7 +74,7 @@ void entrypoint_switch()
       scatra_cardiac_monodomain_dyn(restart);
       break;
     case Core::ProblemType::sti:
-      sti_dyn(restart);
+      sti_dyn(problem, restart);
       break;
     case Core::ProblemType::fluid_xfem:
       fluid_xfem_drt(problem);
@@ -162,7 +162,7 @@ void entrypoint_switch()
       ssi_drt();
       break;
     case Core::ProblemType::ssti:
-      ssti_drt();
+      ssti_drt(problem);
       break;
 
     case Core::ProblemType::particle:
