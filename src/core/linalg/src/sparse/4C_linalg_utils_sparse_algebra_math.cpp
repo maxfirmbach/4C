@@ -217,8 +217,9 @@ std::unique_ptr<Core::LinAlg::SparseMatrix> Core::LinAlg::matrix_multiply(
   if (!A.filled()) FOUR_C_THROW("A has to be fill_complete");
   if (!B.filled()) FOUR_C_THROW("B has to be fill_complete");
 
-  // a first guess for the bandwidth of C leading to much less memory consumption
-  const int nnz = std::max(A.max_num_entries(), B.max_num_entries());
+  // Estimate row capacity from the global maximum input row widths. Transposition and
+  // imported rows can produce local output entries even on ranks with no local input entries.
+  const int nnz = std::max(A.global_max_num_entries(), B.global_max_num_entries());
 
   // now create resultmatrix C with correct rowmap
   auto rangemap = transA ? A.domain_map() : A.range_map();
@@ -252,8 +253,9 @@ std::unique_ptr<Core::LinAlg::SparseMatrix> Core::LinAlg::matrix_multiply(const 
   if (!A.filled()) FOUR_C_THROW("A has to be fill_complete");
   if (!B.filled()) FOUR_C_THROW("B has to be fill_complete");
 
-  // a first guess for the bandwidth of C leading to much less memory consumption
-  const int nnz = std::max(A.max_num_entries(), B.max_num_entries());
+  // Estimate row capacity from the global maximum input row widths. Transposition and
+  // imported rows can produce local output entries even on ranks with no local input entries.
+  const int nnz = std::max(A.global_max_num_entries(), B.global_max_num_entries());
 
   // now create resultmatrix C with correct rowmap
   auto map = transA ? Map(A.domain_map()) : A.range_map();
@@ -273,8 +275,12 @@ std::unique_ptr<Core::LinAlg::SparseMatrix> Core::LinAlg::matrix_multiply(const 
     transB = false;
   }
 
+  // First, assemble all entries. Then, complete using domain and range maps to safely work
+  // under the assumption of a static profile.
   ASSERT_EPETRA_CALL(EpetraExt::MatrixMatrix::Multiply(A_trans->epetra_matrix(), transA,
-      B_trans->epetra_matrix(), transB, C->epetra_matrix(), complete));
+      B_trans->epetra_matrix(), transB, C->epetra_matrix(), false));
+
+  if (complete) C->complete(B_trans->domain_map(), A_trans->range_map());
 
   return C;
 }

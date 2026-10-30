@@ -35,6 +35,15 @@ Core::LinAlg::SparseMatrix::SparseMatrix(std::shared_ptr<Core::LinAlg::Graph> cr
  *----------------------------------------------------------------------*/
 Core::LinAlg::SparseMatrix::SparseMatrix(const Core::LinAlg::Map& rowmap, const int npr,
     bool explicitdirichlet, bool savegraph, MatrixType matrixtype)
+    : SparseMatrix(
+          rowmap, npr, StorageProfile::dynamic_profile, explicitdirichlet, savegraph, matrixtype)
+{
+}
+
+/*----------------------------------------------------------------------*
+ *----------------------------------------------------------------------*/
+Core::LinAlg::SparseMatrix::SparseMatrix(const Core::LinAlg::Map& rowmap, int npr,
+    StorageProfile profile, bool explicitdirichlet, bool savegraph, MatrixType matrixtype)
     : graph_(nullptr),
       dbcmaps_(nullptr),
       explicitdirichlet_(explicitdirichlet),
@@ -43,12 +52,22 @@ Core::LinAlg::SparseMatrix::SparseMatrix(const Core::LinAlg::Map& rowmap, const 
 {
   if (!rowmap.unique_gids()) FOUR_C_THROW("Row map is not unique");
 
+  const bool static_profile = profile == StorageProfile::static_profile;
   if (matrixtype_ == CRS_MATRIX)
-    sysmat_ = std::make_shared<Epetra_CrsMatrix>(::Copy, rowmap.get_epetra_map(), npr, false);
+  {
+    sysmat_ =
+        std::make_shared<Epetra_CrsMatrix>(::Copy, rowmap.get_epetra_map(), npr, static_profile);
+  }
   else if (matrixtype_ == FE_MATRIX)
+  {
+    if (static_profile) FOUR_C_THROW("Static storage profile is not supported for FE matrices");
+    // The fourth FE constructor argument ignores nonlocal entries, not the storage profile.
     sysmat_ = std::make_shared<Epetra_FECrsMatrix>(::Copy, rowmap.get_epetra_map(), npr, false);
+  }
   else
+  {
     FOUR_C_THROW("matrix type is not correct");
+  }
 }
 
 /*----------------------------------------------------------------------*
