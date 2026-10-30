@@ -91,6 +91,11 @@ const Core::LinAlg::Map& FSI::Nonlinear::FSIMatrixFree::domain_map() const
   FOUR_C_THROW("Not implemented");
 }
 
+const Core::LinAlg::Map& FSI::Nonlinear::FSIMatrixFree::range_map() const
+{
+  FOUR_C_THROW("Not implemented");
+}
+
 void FSI::Nonlinear::FSIMatrixFree::add(const Core::LinAlg::SparseOperator& A,
     const bool transposeA, const double scalarA, const double scalarB)
 {

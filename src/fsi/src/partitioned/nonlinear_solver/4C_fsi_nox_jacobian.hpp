@@ -69,6 +69,7 @@ namespace FSI
       void apply_dirichlet(const Core::LinAlg::Map& dbcmap, bool diagonalblock = true) override;
 
       const Core::LinAlg::Map& domain_map() const override;
+      const Core::LinAlg::Map& range_map() const override;
 
       void add(const Core::LinAlg::SparseOperator& A, const bool transposeA, const double scalarA,
           const double scalarB) override;

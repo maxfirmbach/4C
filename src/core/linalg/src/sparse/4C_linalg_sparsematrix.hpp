@@ -490,7 +490,10 @@ namespace Core::LinAlg
     }
 
     /// Returns the Core::LinAlg::Map object associated with the range of this matrix operator.
-    const Core::LinAlg::Map& range_map() const { return range_map_.sync(sysmat_->RangeMap()); }
+    const Core::LinAlg::Map& range_map() const override
+    {
+      return range_map_.sync(sysmat_->RangeMap());
+    }
 
     /// Returns a pointer to the Epetra_Comm communicator associated with this operator.
     MPI_Comm get_comm() const override;
