@@ -191,48 +191,10 @@ void Core::LinAlg::BlockSparseMatrixBase::apply_dirichlet(
 int Core::LinAlg::BlockSparseMatrixBase::Apply(
     const Epetra_MultiVector& X, Epetra_MultiVector& Y) const
 {
-  Y.PutScalar(0.0);
+  auto x_view = Core::LinAlg::MultiVector<double>::create_view(X);
+  auto y_view = Core::LinAlg::MultiVector<double>::create_view(Y);
 
-  if (not UseTranspose())
-  {
-    for (int rblock = 0; rblock < rows(); ++rblock)
-    {
-      std::shared_ptr<Core::LinAlg::MultiVector<double>> rowresult =
-          rangemaps_.vector(rblock, Y.NumVectors());
-      std::shared_ptr<Core::LinAlg::MultiVector<double>> rowy =
-          rangemaps_.vector(rblock, Y.NumVectors());
-      for (int cblock = 0; cblock < cols(); ++cblock)
-      {
-        std::shared_ptr<Core::LinAlg::MultiVector<double>> colx =
-            domainmaps_.extract_vector(Core::LinAlg::MultiVector<double>(X), cblock);
-        const Core::LinAlg::SparseMatrix& bmat = matrix(rblock, cblock);
-        bmat.multiply(false, *colx, *rowy);
-        rowresult->update(1.0, *rowy, 1.0);
-      }
-      View Y_view(Y);
-      rangemaps_.insert_vector(*rowresult, rblock, Y_view);
-    }
-  }
-  else
-  {
-    for (int rblock = 0; rblock < cols(); ++rblock)
-    {
-      std::shared_ptr<Core::LinAlg::MultiVector<double>> rowresult =
-          rangemaps_.vector(rblock, Y.NumVectors());
-      std::shared_ptr<Core::LinAlg::MultiVector<double>> rowy =
-          rangemaps_.vector(rblock, Y.NumVectors());
-      for (int cblock = 0; cblock < rows(); ++cblock)
-      {
-        std::shared_ptr<Core::LinAlg::MultiVector<double>> colx =
-            domainmaps_.extract_vector(Core::LinAlg::MultiVector<double>(X), cblock);
-        const Core::LinAlg::SparseMatrix& bmat = matrix(cblock, rblock);
-        bmat.multiply(false, *colx, *rowy);
-        rowresult->update(1.0, *rowy, 1.0);
-      }
-      View Y_view(Y);
-      rangemaps_.insert_vector(*rowresult, rblock, Y_view);
-    }
-  }
+  multiply(UseTranspose(), *x_view, *y_view);
 
   return 0;
 }
@@ -297,8 +259,26 @@ void Core::LinAlg::BlockSparseMatrixBase::scale(double ScalarConstant)
 void Core::LinAlg::BlockSparseMatrixBase::multiply(bool TransA,
     const Core::LinAlg::MultiVector<double>& X, Core::LinAlg::MultiVector<double>& Y) const
 {
-  if (TransA) FOUR_C_THROW("transpose multiply not implemented for BlockSparseMatrix");
-  Apply(X.get_epetra_multi_vector(), Y.get_epetra_multi_vector());
+  if (TransA) FOUR_C_THROW("Transpose multiplication is not implemented for BlockSparseMatrix.");
+
+  Y.put_scalar(0.0);
+
+  for (int row_block = 0; row_block < rows(); ++row_block)
+  {
+    auto row_result = rangemaps_.vector(row_block, Y.num_vectors());
+    auto block_result = rangemaps_.vector(row_block, Y.num_vectors());
+
+    for (int column_block = 0; column_block < cols(); ++column_block)
+    {
+      auto column_x = domainmaps_.extract_vector(X, column_block);
+
+      matrix(row_block, column_block).multiply(false, *column_x, *block_result);
+
+      row_result->update(1.0, *block_result, 1.0);
+    }
+
+    rangemaps_.insert_vector(*row_result, row_block, Y);
+  }
 }
 
 
