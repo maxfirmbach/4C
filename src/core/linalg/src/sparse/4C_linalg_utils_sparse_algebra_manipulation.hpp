@@ -172,11 +172,11 @@ namespace Core::LinAlg
       const Core::LinAlg::SparseMatrix& ASparse, const MultiMapExtractor& domainmaps,
       const MultiMapExtractor& rangemaps)
   {
-    // initialize resulting BlockSparseMatrix. no need to provide estimates of nonzeros because
-    // all entries will be inserted at once anyway
+    // Each split row is a subset of a source row. Reserve the upper bound for the
+    // static-profile requirement.
     std::shared_ptr<BlockSparseMatrix<Strategy>> blockA =
-        std::make_shared<Core::LinAlg::BlockSparseMatrix<Strategy>>(
-            domainmaps, rangemaps, 0, ASparse.explicit_dirichlet(), ASparse.save_graph());
+        std::make_shared<Core::LinAlg::BlockSparseMatrix<Strategy>>(domainmaps, rangemaps,
+            ASparse.max_num_entries(), ASparse.explicit_dirichlet(), ASparse.save_graph());
 
     if (domainmaps.num_maps() == 2 && rangemaps.num_maps() == 2)
       split_matrix2x2(ASparse, *blockA);

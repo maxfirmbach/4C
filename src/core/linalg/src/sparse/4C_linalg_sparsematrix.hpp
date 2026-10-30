@@ -20,7 +20,6 @@
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_FECrsMatrix.h>
 
-
 FOUR_C_NAMESPACE_OPEN
 
 namespace Core::LinAlg
@@ -88,6 +87,13 @@ namespace Core::LinAlg
       FE_MATRIX
     };
 
+    /// Whether row capacity can grow while assembling the matrix.
+    enum class StorageProfile
+    {
+      dynamic_profile,
+      static_profile
+    };
+
     /// The following dummy templated constructors will catch all attempts to call any constructor
     /// with arguments that require implicit casting. Therefore you have to instantiate this class
     /// with exactly the types matching one of the constructors
@@ -98,9 +104,20 @@ namespace Core::LinAlg
     SparseMatrix(std::shared_ptr<Core::LinAlg::Graph> crsgraph,
         std::shared_ptr<Core::LinAlg::MultiMapExtractor> dbcmaps);
 
-    /// construction of sparse matrix
+    /// Construct a sparse matrix with dynamically growing row capacity.
     SparseMatrix(const Core::LinAlg::Map& rowmap, const int npr, bool explicitdirichlet = true,
         bool savegraph = false, MatrixType matrixtype = CRS_MATRIX);
+
+    /*! \brief Construct a sparse matrix with the requested row-storage profile.
+     *
+     * With a dynamic profile, @p npr estimates the entries per local row and storage may grow.
+     * With a static profile, @p npr is the fixed capacity of each local row; callers must
+     * reserve enough space for every entry they will insert. Static profiles are supported
+     * only for CRS_MATRIX; requesting one with FE_MATRIX throws because FE assembly must
+     * preserve nonlocal entries. Existing constructors retain their dynamic-profile behavior.
+     */
+    SparseMatrix(const Core::LinAlg::Map& rowmap, int npr, StorageProfile profile,
+        bool explicitdirichlet = true, bool savegraph = false, MatrixType matrixtype = CRS_MATRIX);
 
     /// construction of sparse matrix
     SparseMatrix(const Core::LinAlg::Map& rowmap, const Core::LinAlg::Map& colmap, const int npr,
