@@ -156,6 +156,11 @@ const Core::LinAlg::Map& NOX::Nln::MatrixFree::SparseOperatorWrapper::domain_map
   FOUR_C_THROW("Not implemented");
 }
 
+const Core::LinAlg::Map& NOX::Nln::MatrixFree::SparseOperatorWrapper::range_map() const
+{
+  FOUR_C_THROW("Not implemented");
+}
+
 void NOX::Nln::MatrixFree::SparseOperatorWrapper::add(const Core::LinAlg::SparseOperator& A,
     const bool transposeA, const double scalarA, const double scalarB)
 {

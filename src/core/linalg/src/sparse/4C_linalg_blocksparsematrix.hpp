@@ -128,6 +128,10 @@ namespace Core::LinAlg
     /// consistency with Core::LinAlg::SparseMatrix)
     const Map& domain_map() const override { return *domainmaps_.full_map(); }
 
+    /// total matrix range map with all blocks (this is needed for
+    /// consistency with Core::LinAlg::SparseMatrix)
+    const Map& range_map() const override { return *rangemaps_.full_map(); }
+
     /// total matrix row map with all blocks
     /*!
       \pre Filled()==true

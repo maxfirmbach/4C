@@ -212,6 +212,9 @@ namespace Core::LinAlg
     /// Returns the Epetra_Map object associated with the (full) domain of this operator.
     virtual const Map& domain_map() const = 0;
 
+    /// Returns the Epetra_Map object associated with the (full) range of this operator.
+    virtual const Map& range_map() const = 0;
+
     /// Add one operator to another
     virtual void add(const Core::LinAlg::SparseOperator& A, const bool transposeA,
         const double scalarA, const double scalarB) = 0;
