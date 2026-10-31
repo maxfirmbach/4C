@@ -25,13 +25,41 @@ Teuchos::RCP<const Thyra::VectorSpaceBase<double>> Core::LinearSolver::Utils::cr
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-Teuchos::RCP<Thyra::MultiVectorBase<double>> Core::LinearSolver::Utils::create_thyra_multi_vector(
+Teuchos::RCP<const Thyra::MultiVectorBase<double>>
+Core::LinearSolver::Utils::create_thyra_multi_vector(
     const Core::LinAlg::MultiVector<double>& multi_vector, const Core::LinAlg::Map& map)
 {
-  auto const_thyra_vector = Thyra::create_MultiVector(
+  return Thyra::create_MultiVector(
       Teuchos::rcpFromRef(multi_vector.get_epetra_multi_vector()), create_thyra_map(map));
+}
 
-  return Teuchos::rcp_const_cast<Thyra::MultiVectorBase<double>>(const_thyra_vector);
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+Teuchos::RCP<Thyra::MultiVectorBase<double>> Core::LinearSolver::Utils::create_thyra_multi_vector(
+    Core::LinAlg::MultiVector<double>& multi_vector, const Core::LinAlg::Map& map)
+{
+  return Thyra::create_MultiVector(
+      Teuchos::rcpFromRef(multi_vector.get_epetra_multi_vector()), create_thyra_map(map));
+}
+
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+Teuchos::RCP<const Thyra::LinearOpBase<double>> Core::LinearSolver::Utils::create_thyra_linear_op(
+    const Core::LinAlg::SparseOperator& matrix, Core::LinAlg::DataAccess access)
+{
+  if (const auto* sparse_matrix = dynamic_cast<const Core::LinAlg::SparseMatrix*>(&matrix))
+  {
+    return create_thyra_linear_op(*sparse_matrix, access);
+  }
+
+  if (const auto* block_matrix = dynamic_cast<const Core::LinAlg::BlockSparseMatrixBase*>(&matrix))
+  {
+    return create_thyra_linear_op(*block_matrix, access);
+  }
+
+  FOUR_C_THROW("Cannot create a Thyra operator from this SparseOperator implementation.");
 }
 
 
@@ -63,22 +91,11 @@ Teuchos::RCP<const Thyra::LinearOpBase<double>> Core::LinearSolver::Utils::creat
   auto block_matrix = Thyra::defaultBlockedLinearOp<double>();
 
   block_matrix->beginBlockFill(matrix.rows(), matrix.cols());
-  for (int row = 0; row < matrix.rows(); row++)
+  for (int row = 0; row < matrix.rows(); ++row)
   {
-    for (int col = 0; col < matrix.cols(); col++)
+    for (int col = 0; col < matrix.cols(); ++col)
     {
-      Teuchos::RCP<const Epetra_CrsMatrix> A_crs;
-
-      if (access == Core::LinAlg::DataAccess::Copy)
-      {
-        A_crs = Teuchos::make_rcp<Epetra_CrsMatrix>(matrix(row, col).epetra_matrix());
-      }
-      else
-      {
-        A_crs = Teuchos::rcpFromRef(matrix(row, col).epetra_matrix());
-      }
-
-      block_matrix->setBlock(row, col, Thyra::epetraLinearOp(A_crs));
+      block_matrix->setBlock(row, col, create_thyra_linear_op(matrix(row, col), access));
     }
   }
   block_matrix->endBlockFill();
