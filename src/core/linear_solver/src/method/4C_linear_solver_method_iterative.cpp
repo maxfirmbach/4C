@@ -110,8 +110,12 @@ int Core::LinearSolver::IterativeSolver::solve(Core::LinAlg::MultiVector<double>
           prec->domain(), false) != Teuchos::null;
 
   auto a = Utils::create_thyra_linear_op(a_, Core::LinAlg::DataAccess::Share, use_product_space);
-  auto solution = Utils::create_thyra_multi_vector(x, a->range());
-  auto b = Utils::create_thyra_multi_vector(*b_, a->domain());
+
+  auto range_space = a->range().create_strong();
+  auto domain_space = a->domain().create_strong();
+
+  auto solution = Utils::create_thyra_multi_vector(x, range_space);
+  auto b = Utils::create_thyra_multi_vector(*b_, domain_space);
 
   auto problem = Teuchos::make_rcp<belos_problem>(a, solution, b);
   if (preconditioner_ != nullptr) problem->setRightPrec(prec);
