@@ -19,7 +19,7 @@ FOUR_C_NAMESPACE_OPEN
  *----------------------------------------------------------------------*/
 Core::LinAlg::BlockSparseMatrixBase::BlockSparseMatrixBase(const MultiMapExtractor& domainmaps,
     const MultiMapExtractor& rangemaps, int npr, bool explicitdirichlet, bool savegraph)
-    : domainmaps_(domainmaps), rangemaps_(rangemaps), usetranspose_(false)
+    : domainmaps_(domainmaps), rangemaps_(rangemaps)
 {
   blocks_.reserve(rows() * cols());
 
@@ -188,30 +188,6 @@ void Core::LinAlg::BlockSparseMatrixBase::apply_dirichlet(
 
 /*----------------------------------------------------------------------*
  *----------------------------------------------------------------------*/
-int Core::LinAlg::BlockSparseMatrixBase::Apply(
-    const Epetra_MultiVector& X, Epetra_MultiVector& Y) const
-{
-  auto x_view = Core::LinAlg::MultiVector<double>::create_view(X);
-  auto y_view = Core::LinAlg::MultiVector<double>::create_view(Y);
-
-  multiply(UseTranspose(), *x_view, *y_view);
-
-  return 0;
-}
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-int Core::LinAlg::BlockSparseMatrixBase::ApplyInverse(
-    const Epetra_MultiVector& X, Epetra_MultiVector& Y) const
-{
-  FOUR_C_THROW("Core::LinAlg::BlockSparseMatrixBase::ApplyInverse not implemented");
-  return -1;
-}
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
 void Core::LinAlg::BlockSparseMatrixBase::add(const Core::LinAlg::SparseOperator& A,
     const bool transposeA, const double scalarA, const double scalarB)
 {
@@ -281,53 +257,12 @@ void Core::LinAlg::BlockSparseMatrixBase::multiply(bool TransA,
   }
 }
 
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-double Core::LinAlg::BlockSparseMatrixBase::NormInf() const { return -1; }
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-const char* Core::LinAlg::BlockSparseMatrixBase::Label() const
-{
-  return "Core::LinAlg::BlockSparseMatrixBase";
-}
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-bool Core::LinAlg::BlockSparseMatrixBase::UseTranspose() const { return usetranspose_; }
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-bool Core::LinAlg::BlockSparseMatrixBase::HasNormInf() const { return false; }
-
-
 /*----------------------------------------------------------------------*
  *----------------------------------------------------------------------*/
 MPI_Comm Core::LinAlg::BlockSparseMatrixBase::get_comm() const
 {
   return full_domain_map().get_comm();
 }
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-const Epetra_Map& Core::LinAlg::BlockSparseMatrixBase::OperatorDomainMap() const
-{
-  return full_domain_map().get_epetra_map();
-}
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-const Epetra_Map& Core::LinAlg::BlockSparseMatrixBase::OperatorRangeMap() const
-{
-  return full_range_map().get_epetra_map();
-}
-
 
 /*----------------------------------------------------------------------*
  *----------------------------------------------------------------------*/

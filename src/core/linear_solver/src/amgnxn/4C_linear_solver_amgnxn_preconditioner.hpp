@@ -130,13 +130,16 @@ namespace Core::LinearSolver
     }
 
     // Only required to properly define an Epetra_Operator, not should be used!
-    const Epetra_Comm& Comm() const override { return a_->Comm(); }
+    const Epetra_Comm& Comm() const override { return a_->domain_map().get_epetra_map().Comm(); }
 
     // Only required to properly define an Epetra_Operator, not should be used!
-    const Epetra_Map& OperatorDomainMap() const override { return a_->OperatorDomainMap(); }
+    const Epetra_Map& OperatorDomainMap() const override
+    {
+      return a_->domain_map().get_epetra_map();
+    }
 
     // Only required to properly define an Epetra_Operator, not should be used!
-    const Epetra_Map& OperatorRangeMap() const override { return a_->OperatorRangeMap(); }
+    const Epetra_Map& OperatorRangeMap() const override { return a_->range_map().get_epetra_map(); }
 
     void setup();  // TODO
 

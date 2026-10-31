@@ -28,7 +28,7 @@ namespace Core::LinAlg
     implemented in terms of the matrix blocks.
 
    */
-  class BlockSparseMatrixBase : public SparseOperator, public Epetra_Operator
+  class BlockSparseMatrixBase : public SparseOperator
   {
    public:
     /// constructor
@@ -146,22 +146,8 @@ namespace Core::LinAlg
 
     //@}
 
-    /** \name Attribute set methods */
-    //@{
-
-    /// If set true, transpose of this operator will be applied.
-    int SetUseTranspose(bool UseTranspose) override { FOUR_C_THROW("Not implemented."); }
-
-    //@}
-
     /** \name Mathematical functions */
     //@{
-
-    /// Returns the result of a Epetra_Operator applied to a Epetra_MultiVector X in Y.
-    int Apply(const Epetra_MultiVector& X, Epetra_MultiVector& Y) const override;
-
-    /// Returns the result of a Epetra_Operator inverse applied to an Epetra_MultiVector X in Y.
-    int ApplyInverse(const Epetra_MultiVector& X, Epetra_MultiVector& Y) const override;
 
     /// Resolve virtual function of parent class
     void multiply(bool TransA, const Core::LinAlg::MultiVector<double>& X,
@@ -174,34 +160,12 @@ namespace Core::LinAlg
     /// Multiply all values in the matrix by a constant value (in place: A <- ScalarConstant * A).
     void scale(double ScalarConstant) override;
 
-    /// Returns the infinity norm of the global matrix.
-    double NormInf() const override;
-
     //@}
 
     /** \name Attribute access functions */
     //@{
 
-    /// Returns a character string describing the operator.
-    const char* Label() const override;
-
-    /// Returns the current UseTranspose setting.
-    bool UseTranspose() const override;
-
-    /// Returns true if the this object can provide an approximate Inf-norm, false otherwise.
-    bool HasNormInf() const override;
-
-    /// Returns a pointer to the Epetra_Comm communicator associated with this operator.
-    const Epetra_Comm& Comm() const override { return full_domain_map().get_epetra_map().Comm(); }
-
     MPI_Comm get_comm() const override;
-
-
-    /// Returns the Core::LinAlg::Map object associated with the domain of this operator.
-    const Epetra_Map& OperatorDomainMap() const override;
-
-    /// Returns the Core::LinAlg::Map object associated with the range of this operator.
-    const Epetra_Map& OperatorRangeMap() const override;
 
     //@}
 
@@ -226,9 +190,6 @@ namespace Core::LinAlg
 
     /// full matrix column map
     std::shared_ptr<Core::LinAlg::Map> fullcolmap_;
-
-    /// see matrix as transposed
-    bool usetranspose_;
   };
 
 
