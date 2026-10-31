@@ -7,7 +7,7 @@
 
 #include "4C_linear_solver_method_linalg.hpp"
 
-#include "4C_comm_mpi_utils.hpp"
+#include "4C_comm_utils.hpp"
 #include "4C_io_pstream.hpp"
 #include "4C_linalg_sparsematrix.hpp"
 #include "4C_linear_solver_method_direct.hpp"
@@ -19,7 +19,6 @@
 #include <Teuchos_StandardParameterEntryValidators.hpp>
 #include <Teuchos_TimeMonitor.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
-#include <Xpetra_EpetraUtils.hpp>
 
 #include <filesystem>
 
@@ -273,7 +272,7 @@ Teuchos::ParameterList translate_four_c_to_belos(const Teuchos::ParameterList& i
     Teuchos::ParameterList belos_parameters;
     Teuchos::updateParametersFromXmlFileAndBroadcast(xml_file_name,
         Teuchos::Ptr<Teuchos::ParameterList>(&belos_parameters),
-        *Xpetra::toXpetra(Core::Communication::as_epetra_comm(comm)));
+        *Core::Communication::to_teuchos_comm<int>(comm));
 
     // required for adaptive linear solver tolerance
     beloslist.set("Convergence Tolerance",

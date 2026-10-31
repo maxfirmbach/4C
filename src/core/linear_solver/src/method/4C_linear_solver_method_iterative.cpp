@@ -7,6 +7,7 @@
 
 #include "4C_linear_solver_method_iterative.hpp"
 
+#include "4C_comm_utils.hpp"
 #include "4C_linalg_map.hpp"
 #include "4C_linear_solver_amgnxn_preconditioner.hpp"
 #include "4C_linear_solver_epetra_utils.hpp"
@@ -128,7 +129,7 @@ int Core::LinearSolver::IterativeSolver::solve(Core::LinAlg::MultiVector<double>
     Teuchos::ParameterList belosParams;
     Teuchos::updateParametersFromXmlFileAndBroadcast(xmlFileName,
         Teuchos::Ptr<Teuchos::ParameterList>(&belosParams),
-        *Xpetra::toXpetra(Core::Communication::as_epetra_comm(comm_)));
+        *Core::Communication::to_teuchos_comm<int>(comm_));
 
     if (belosParams.isSublist("GMRES"))
     {
