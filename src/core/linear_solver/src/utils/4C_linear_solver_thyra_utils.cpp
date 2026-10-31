@@ -15,6 +15,7 @@
 #include <Thyra_EpetraLinearOp.hpp>
 #include <Thyra_EpetraThyraWrappers.hpp>
 #include <Thyra_LinearOpDefaultBase.hpp>
+#include <Thyra_MultiVectorBase.hpp>
 #include <Thyra_PhysicallyBlockedLinearOpBase.hpp>
 
 FOUR_C_NAMESPACE_OPEN

@@ -11,6 +11,7 @@
 #include "4C_linear_solver_method_projector.hpp"
 
 #include <Thyra_EpetraThyraWrappers.hpp>
+#include <Thyra_MultiVectorBase.hpp>
 
 #include <utility>
 
