@@ -180,7 +180,8 @@ Teuchos::RCP<Thyra::MultiVectorBase<double>> Core::LinearSolver::Utils::create_t
 {
   // TODO: We might need to cast if we have a product vector space and handle things differently ...
   // If we have a product space, we will also need to get a product vector.
-  auto product_map = Teuchos::rcp_dynamic_cast<const Thyra::DefaultProductVectorSpace<double>>(map);
+  auto product_map = Teuchos::rcp_dynamic_cast<const Thyra::DefaultProductVectorSpace<double>>(
+      map.create_strong());
 
   if (product_map.is_null())
   {
