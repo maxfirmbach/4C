@@ -123,7 +123,8 @@ repos:
         description: "Check that all C++ files have the correct file name"
         language: system
         types_or: [c++, c]
-        exclude: "tests/cut_test/|mm$|dummy.cpp"
+        # texture_fetch_functions.h needs a naming exception: Clang includes it by that exact name.
+        exclude: 'tests/cut_test/|mm$|dummy.cpp|utilities/clangcuda-compat/texture_fetch_functions\.h'
         entry: utilities/python-venv/bin/check-filenames
         require_serial: true # To give a non duplicated error output
 

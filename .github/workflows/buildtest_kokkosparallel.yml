@@ -118,9 +118,62 @@ jobs:
           use-ccache: "true"
           cache-key: kokkoscuda-clangcuda-ccache-4.13.6
 
+  clangcuda_cuda13_tiny_example_build:
+    name: CUDA 13 tiny example build (Clang ${{ matrix.clang }})
+    strategy:
+      fail-fast: false
+      matrix:
+        clang: [21, 22]
+    runs-on: ubuntu-latest
+    container:
+      image: nvidia/cuda:13.3.1-devel-ubuntu26.04
+    defaults:
+      run:
+        shell: bash
+    env:
+      CLANGCUDA_CLANG_PATH: /usr/bin/clang++-${{ matrix.clang }}
+      CLANGCUDA_CUDA_PATH: /usr/local/cuda
+      CLANGCUDA_ARCH: sm_90
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Clang
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends clang-${{ matrix.clang }}
+          "$CLANGCUDA_CLANG_PATH" --version
+      - name: Compile and link CUDA kernel with the checkout's wrapper
+        run: |
+          mkdir -p build/clangcuda-tiny-example
+          cat > build/clangcuda-tiny-example/test.cpp <<'EOF'
+          #include <cuda_runtime.h>
+
+          __global__ void evaluate_math(double* result)
+          {
+            result[threadIdx.x] = sqrt(4.0) + rsqrt(4.0);
+          }
+
+          int main()
+          {
+            double* result = nullptr;
+            if (cudaMalloc(&result, sizeof(double)) != cudaSuccess)
+              return 1;
+            evaluate_math<<<1, 1>>>(result);
+            const auto launch_status = cudaGetLastError();
+            const auto free_status = cudaFree(result);
+            return launch_status != cudaSuccess || free_status != cudaSuccess;
+          }
+          EOF
+          utilities/clangcuda++ -std=c++20 -DCLANGCUDA_MODE_DEVICE \
+            -c build/clangcuda-tiny-example/test.cpp -o build/clangcuda-tiny-example/test.o
+          utilities/clangcuda++ build/clangcuda-tiny-example/test.o \
+            -L/usr/local/cuda/lib64 -lcudart -o build/clangcuda-tiny-example/test
+          # Check that device code was embedded; running it would require a GPU.
+          /usr/local/cuda/bin/cuobjdump --list-elf build/clangcuda-tiny-example/test | grep sm_90
+
   ensure_all_tests_pass_kokkos:
     needs:
       - kokkoscuda_build
+      - clangcuda_cuda13_tiny_example_build
       - kokkosopenmp_build
       - kokkosopenmp_test_minimal
     runs-on: ubuntu-latest

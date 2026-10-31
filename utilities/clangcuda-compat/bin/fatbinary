@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# This file is part of 4C multiphysics licensed under the
+# GNU Lesser General Public License v3.0 or later.
+#
+# See the LICENSE.md file in the top-level for license information.
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+if [[ -z "${CLANGCUDA_CUDA_PATH:-}" ]]; then
+  echo "fatbinary compatibility wrapper error: CLANGCUDA_CUDA_PATH is not set" >&2
+  exit 1
+fi
+
+fatbinary="${CLANGCUDA_CUDA_PATH}/bin/fatbinary"
+if [[ ! -x "$fatbinary" ]]; then
+  echo "fatbinary compatibility wrapper error: $fatbinary is not executable" >&2
+  exit 1
+fi
+
+if ! help_output="$("$fatbinary" --help 2>&1)"; then
+  echo "fatbinary compatibility wrapper error: could not query $fatbinary --help" >&2
+  exit 1
+fi
+
+# Older CUDA toolkits accept Clang's --image syntax directly. Newer toolkits
+# removed it in favor of --image3.
+if grep -Eq '^[[:space:]]*--image([[:space:]]|$)' <<<"$help_output"; then
+  exec "$fatbinary" "$@"
+fi
+
+args=()
+for arg in "$@"; do
+  case "$arg" in
+    --image=profile=sm_*,file=*)
+      image="${arg#--image=profile=}"
+      profile="${image%%,*}"
+      args+=("--image3=kind=elf,sm=${profile#sm_},${image#*,}")
+      ;;
+    --image=profile=compute_*,file=*)
+      image="${arg#--image=profile=}"
+      profile="${image%%,*}"
+      args+=("--image3=kind=ptx,sm=${profile#compute_},${image#*,}")
+      ;;
+    *)
+      args+=("$arg")
+      ;;
+  esac
+done
+
+exec "$fatbinary" "${args[@]}"
