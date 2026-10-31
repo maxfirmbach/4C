@@ -52,7 +52,7 @@ namespace Core::LinearSolver
 
     virtual Teuchos::RCP<const Thyra::LinearOpBase<double>> thyra_prec_operator() const
     {
-      return Thyra::epetraLinearOp(Teuchos::rcp(prec_operator()));
+      return Thyra::epetraLinearOp(Teuchos::rcpFromRef(*prec_operator()));
     }
   };
 }  // namespace Core::LinearSolver

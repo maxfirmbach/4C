@@ -98,7 +98,28 @@ namespace
 Teuchos::RCP<const Thyra::VectorSpaceBase<double>> Core::LinearSolver::Utils::create_thyra_map(
     const Core::LinAlg::Map& map)
 {
-  return Thyra::create_VectorSpace(Teuchos::rcpFromRef(map.get_epetra_map()));
+  Teuchos::RCP<Epetra_Map> epetra_map;
+
+  try
+  {
+    epetra_map = Teuchos::make_rcp<Epetra_Map>(map.get_epetra_map());
+  }
+  catch (const Core::Exception&)
+  {
+    /*
+     * A point map can only be constructed directly this way if every
+     * BlockMap element represents exactly one point.
+     */
+    FOUR_C_ASSERT_ALWAYS(map.num_global_points() == map.num_global_elements() &&
+                             map.num_my_points() == map.num_my_elements(),
+        "Cannot create a flat Thyra vector space from an "
+        "Epetra_BlockMap with element sizes greater than one.");
+
+    epetra_map = Teuchos::make_rcp<Epetra_Map>(map.num_global_points(), map.num_my_points(),
+        map.my_global_elements(), map.index_base(), map.get_epetra_block_map().Comm());
+  }
+
+  return Thyra::create_VectorSpace(epetra_map);
 }
 
 
