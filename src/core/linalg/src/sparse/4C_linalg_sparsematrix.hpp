@@ -390,18 +390,6 @@ namespace Core::LinAlg
 
     /** \name Utility functions */
     //@{
-    /*! \brief return the internal Epetra_Operator
-
-    The internal Epetra_Operator here is the internal Epetra_CrsMatrix or Epetra_FECrsMatrix. This
-    way the solver can down-cast to Epetra_CrsMatrix or Epetra_FECrsMatrix and access the matrix
-    rows directly.
-
-    \note This method is here for performance reasons.
-   */
-    Epetra_Operator& epetra_operator() override { return *sysmat_; }
-
-    /// return the internal Epetra matrix as Epetra_Operator
-    const Epetra_Operator& epetra_operator() const { return *sysmat_; }
 
     /// return the internal Epetra_CrsMatrix or Epetra_FECrsMatrix
     /// (down-cast from Epetra_CrsMatrix !) (you should not need this!)

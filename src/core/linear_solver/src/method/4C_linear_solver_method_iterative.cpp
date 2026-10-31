@@ -9,6 +9,7 @@
 
 #include "4C_linalg_map.hpp"
 #include "4C_linear_solver_amgnxn_preconditioner.hpp"
+#include "4C_linear_solver_epetra_utils.hpp"
 #include "4C_linear_solver_method_projector.hpp"
 #include "4C_linear_solver_preconditioner_ifpack.hpp"
 #include "4C_linear_solver_preconditioner_muelu.hpp"
@@ -101,8 +102,11 @@ int Core::LinearSolver::IterativeSolver::solve(Core::LinAlg::MultiVector<double>
 {
   Teuchos::ParameterList& belist = params().sublist("Belos Parameters");
 
+  Teuchos::RCP<Epetra_Operator> a =
+      Teuchos::make_rcp<Core::LinearSolver::EpetraOperatorAdapter>(a_);
+
   auto problem = Teuchos::make_rcp<Belos::LinearProblem<double, BelosVectorType, BelosMatrixType>>(
-      Teuchos::rcpFromRef(a_->epetra_operator()), Teuchos::rcpFromRef(x.get_epetra_multi_vector()),
+      a, Teuchos::rcpFromRef(x.get_epetra_multi_vector()),
       Teuchos::rcpFromRef(b_->get_epetra_multi_vector()));
 
   if (preconditioner_ != nullptr)

@@ -19,7 +19,7 @@ FOUR_C_NAMESPACE_OPEN
  *----------------------------------------------------------------------*/
 Core::LinAlg::BlockSparseMatrixBase::BlockSparseMatrixBase(const MultiMapExtractor& domainmaps,
     const MultiMapExtractor& rangemaps, int npr, bool explicitdirichlet, bool savegraph)
-    : domainmaps_(domainmaps), rangemaps_(rangemaps), usetranspose_(false)
+    : domainmaps_(domainmaps), rangemaps_(rangemaps)
 {
   blocks_.reserve(rows() * cols());
 
@@ -188,68 +188,6 @@ void Core::LinAlg::BlockSparseMatrixBase::apply_dirichlet(
 
 /*----------------------------------------------------------------------*
  *----------------------------------------------------------------------*/
-int Core::LinAlg::BlockSparseMatrixBase::Apply(
-    const Epetra_MultiVector& X, Epetra_MultiVector& Y) const
-{
-  Y.PutScalar(0.0);
-
-  if (not UseTranspose())
-  {
-    for (int rblock = 0; rblock < rows(); ++rblock)
-    {
-      std::shared_ptr<Core::LinAlg::MultiVector<double>> rowresult =
-          rangemaps_.vector(rblock, Y.NumVectors());
-      std::shared_ptr<Core::LinAlg::MultiVector<double>> rowy =
-          rangemaps_.vector(rblock, Y.NumVectors());
-      for (int cblock = 0; cblock < cols(); ++cblock)
-      {
-        std::shared_ptr<Core::LinAlg::MultiVector<double>> colx =
-            domainmaps_.extract_vector(Core::LinAlg::MultiVector<double>(X), cblock);
-        const Core::LinAlg::SparseMatrix& bmat = matrix(rblock, cblock);
-        bmat.multiply(false, *colx, *rowy);
-        rowresult->update(1.0, *rowy, 1.0);
-      }
-      View Y_view(Y);
-      rangemaps_.insert_vector(*rowresult, rblock, Y_view);
-    }
-  }
-  else
-  {
-    for (int rblock = 0; rblock < cols(); ++rblock)
-    {
-      std::shared_ptr<Core::LinAlg::MultiVector<double>> rowresult =
-          rangemaps_.vector(rblock, Y.NumVectors());
-      std::shared_ptr<Core::LinAlg::MultiVector<double>> rowy =
-          rangemaps_.vector(rblock, Y.NumVectors());
-      for (int cblock = 0; cblock < rows(); ++cblock)
-      {
-        std::shared_ptr<Core::LinAlg::MultiVector<double>> colx =
-            domainmaps_.extract_vector(Core::LinAlg::MultiVector<double>(X), cblock);
-        const Core::LinAlg::SparseMatrix& bmat = matrix(cblock, rblock);
-        bmat.multiply(false, *colx, *rowy);
-        rowresult->update(1.0, *rowy, 1.0);
-      }
-      View Y_view(Y);
-      rangemaps_.insert_vector(*rowresult, rblock, Y_view);
-    }
-  }
-
-  return 0;
-}
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-int Core::LinAlg::BlockSparseMatrixBase::ApplyInverse(
-    const Epetra_MultiVector& X, Epetra_MultiVector& Y) const
-{
-  FOUR_C_THROW("Core::LinAlg::BlockSparseMatrixBase::ApplyInverse not implemented");
-  return -1;
-}
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
 void Core::LinAlg::BlockSparseMatrixBase::add(const Core::LinAlg::SparseOperator& A,
     const bool transposeA, const double scalarA, const double scalarB)
 {
@@ -297,33 +235,27 @@ void Core::LinAlg::BlockSparseMatrixBase::scale(double ScalarConstant)
 void Core::LinAlg::BlockSparseMatrixBase::multiply(bool TransA,
     const Core::LinAlg::MultiVector<double>& X, Core::LinAlg::MultiVector<double>& Y) const
 {
-  if (TransA) FOUR_C_THROW("transpose multiply not implemented for BlockSparseMatrix");
-  Apply(X.get_epetra_multi_vector(), Y.get_epetra_multi_vector());
+  if (TransA) FOUR_C_THROW("Transpose multiplication is not implemented for BlockSparseMatrix.");
+
+  Y.put_scalar(0.0);
+
+  for (int row_block = 0; row_block < rows(); ++row_block)
+  {
+    auto row_result = rangemaps_.vector(row_block, Y.num_vectors());
+    auto block_result = rangemaps_.vector(row_block, Y.num_vectors());
+
+    for (int column_block = 0; column_block < cols(); ++column_block)
+    {
+      auto column_x = domainmaps_.extract_vector(X, column_block);
+
+      matrix(row_block, column_block).multiply(false, *column_x, *block_result);
+
+      row_result->update(1.0, *block_result, 1.0);
+    }
+
+    rangemaps_.insert_vector(*row_result, row_block, Y);
+  }
 }
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-double Core::LinAlg::BlockSparseMatrixBase::NormInf() const { return -1; }
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-const char* Core::LinAlg::BlockSparseMatrixBase::Label() const
-{
-  return "Core::LinAlg::BlockSparseMatrixBase";
-}
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-bool Core::LinAlg::BlockSparseMatrixBase::UseTranspose() const { return usetranspose_; }
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-bool Core::LinAlg::BlockSparseMatrixBase::HasNormInf() const { return false; }
-
 
 /*----------------------------------------------------------------------*
  *----------------------------------------------------------------------*/
@@ -331,23 +263,6 @@ MPI_Comm Core::LinAlg::BlockSparseMatrixBase::get_comm() const
 {
   return full_domain_map().get_comm();
 }
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-const Epetra_Map& Core::LinAlg::BlockSparseMatrixBase::OperatorDomainMap() const
-{
-  return full_domain_map().get_epetra_map();
-}
-
-
-/*----------------------------------------------------------------------*
- *----------------------------------------------------------------------*/
-const Epetra_Map& Core::LinAlg::BlockSparseMatrixBase::OperatorRangeMap() const
-{
-  return full_range_map().get_epetra_map();
-}
-
 
 /*----------------------------------------------------------------------*
  *----------------------------------------------------------------------*/
